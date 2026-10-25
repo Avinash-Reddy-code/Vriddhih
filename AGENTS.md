@@ -7,7 +7,7 @@ Guidance for coding agents (Devin and others) working in this repository.
 - Name: **Vrddhih**, a native Android personal-growth app with a Solo Leveling-inspired "hunter system" look.
 - Package / namespace / applicationId: `com.vrddhih.app`
 - Single module: `:app`
-- Stack: Kotlin, Jetpack Compose, Material 3, Navigation Compose, AndroidX ViewModel, Gradle Kotlin DSL with a version catalog (`gradle/libs.versions.toml`).
+- Stack: Kotlin, Jetpack Compose, Material 3, Navigation Compose, AndroidX ViewModel, Room 2.8.5 with KSP 2.3.12, Gradle Kotlin DSL with a version catalog (`gradle/libs.versions.toml`).
 - Toolchain: AGP 9.4.1 (built-in Kotlin, KGP 2.2.10), Gradle 9.6.0 wrapper, Gradle daemon JVM toolchain 25, compileSdk/targetSdk 37, minSdk 26, Java source/target 11.
 
 ## Data requirement: local only (non-negotiable)
@@ -65,3 +65,12 @@ export JAVA_HOME=~/Applications/android-studio/jbr   # fish: set -x JAVA_HOME ~/
 - Check `git status` before editing. Never reset, clean, force-push or rewrite history. Commit only when asked.
 - Work phase by phase as listed in `docs/ROADMAP.md`, and stop for review at the end of each phase.
 - Report build and test results accurately. Never claim device or emulator verification that did not happen.
+
+## Database rules
+
+- Room database: `core/data/local/VrddhihDatabase.kt`. Schema JSON is exported to `app/schemas/` and must be committed.
+- Never enable `fallbackToDestructiveMigration`. Every schema change bumps the version, adds a `Migration` to `VrddhihMigrations.ALL`, and gets a migration test.
+- `LocalDate` is stored as epoch day and `Instant` as epoch millis (UTC). Never convert calendar days through timestamps.
+- Store money as positive `Long` minor units (paise), with direction given by `TransactionType`.
+- Repeatable actions (completions, check-ins, XP events) rely on unique indexes plus `OnConflictStrategy.IGNORE`. The repository returns `false` for a duplicate.
+- Each screen ViewModel owns its own `DateSelectionStateHolder` (`core/time`). Do not share one global selected date.

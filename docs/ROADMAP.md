@@ -2,7 +2,7 @@
 
 Every phase stays within the local-only rule: no accounts, no cloud, no sync, and all data on the device. Each phase ends with a review before the next one starts.
 
-## Phase 0: Foundation and UI *(current)*
+## Phase 0: Foundation and UI *(done)*
 
 - Feature-oriented package structure in the existing `:app` module.
 - A dark hunter-system design system with centralized tokens and reusable components.
@@ -11,13 +11,14 @@ Every phase stays within the local-only rule: no accounts, no cloud, no sync, an
 - Project documentation (README, AGENTS, architecture, roadmap).
 - Out of scope: persistence, a database, backup and restore.
 
-## Phase 1: Room database and local data architecture
+## Phase 1: Room database and local data architecture *(implemented, awaiting review)*
 
 - Add Room (and KSP) with entities for quests, habits, goals, finance entries and player progress.
 - Repositories expose `Flow`s to ViewModels. Replace `DashboardMockData` with real local state.
 - Provide simple manual dependency wiring, adopting a DI framework only if wiring becomes painful.
 - Plan schema versioning and migrations from the start.
-- Decide the Android Auto Backup policy for the database: currently `allowBackup="true"` from the template.
+- Android Auto Backup and device transfer are disabled (decided in Phase 1).
+- A dashboard date strip and calendar dialog, plus a selected-day "Day log" read from Room.
 
 ## Phase 2: Tasks and recurring quests
 

@@ -19,32 +19,55 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vrddhih.app.R
+import com.vrddhih.app.core.data.repository.DayActivity
 import com.vrddhih.app.core.theme.VrddhihColors
 import com.vrddhih.app.core.theme.VrddhihDimens
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTheme
+import com.vrddhih.app.core.time.DateSelectionState
+import com.vrddhih.app.core.ui.components.CalendarToggleButton
+import com.vrddhih.app.core.ui.components.DateStrip
 import com.vrddhih.app.core.ui.components.ScreenHeader
 import com.vrddhih.app.core.ui.components.SystemPanel
+import com.vrddhih.app.core.ui.components.VrddhihCalendarDialog
 import com.vrddhih.app.features.dashboard.mock.DashboardMockData
+import java.time.LocalDate
 
 @Composable
 fun DashboardRoute(
     modifier: Modifier = Modifier,
-    viewModel: DashboardViewModel = viewModel(),
+    viewModel: DashboardViewModel = viewModel(factory = DashboardViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val dateState by viewModel.dateState.collectAsStateWithLifecycle()
+    val dayLog by viewModel.dayLog.collectAsStateWithLifecycle()
+
+    // Re-read the device date on every resume so "today" stays correct past midnight or after a time-zone change.
+    LifecycleResumeEffect(viewModel) {
+        viewModel.refreshToday()
+        onPauseOrDispose { }
+    }
+
     DashboardScreen(
         uiState = uiState,
+        dateState = dateState,
+        dayLog = dayLog,
         onToggleQuestPreview = viewModel::toggleQuestPreview,
+        onDateSelected = viewModel::selectDate,
+        onSelectToday = viewModel::selectToday,
         modifier = modifier,
     )
 }
@@ -52,9 +75,15 @@ fun DashboardRoute(
 @Composable
 fun DashboardScreen(
     uiState: DashboardUiState,
+    dateState: DateSelectionState,
+    dayLog: DayLogUiState,
     onToggleQuestPreview: (String) -> Unit,
+    onDateSelected: (LocalDate) -> Unit,
+    onSelectToday: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showCalendar by rememberSaveable { mutableStateOf(false) }
+
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         LazyColumn(
             modifier = Modifier
@@ -68,8 +97,18 @@ fun DashboardScreen(
                     eyebrow = stringResource(R.string.dashboard_eyebrow),
                     title = stringResource(R.string.dashboard_title),
                     subtitle = stringResource(R.string.dashboard_subtitle),
+                    action = { CalendarToggleButton(onClick = { showCalendar = true }) },
                 )
             }
+            item(key = "date-strip") {
+                DateStrip(
+                    days = dateState.visibleWeek,
+                    selectedDate = dateState.selectedDate,
+                    today = dateState.today,
+                    onDateSelected = onDateSelected,
+                )
+            }
+            item(key = "day-log") { DayLogPanel(dateState = dateState, dayLog = dayLog) }
             item(key = "notice") { PreviewNotice() }
             item(key = "player") { PlayerStatusPanel(player = uiState.player) }
             item(key = "summary") { DailySummaryPanel(uiState = uiState) }
@@ -89,6 +128,22 @@ fun DashboardScreen(
                 )
             }
         }
+    }
+
+    if (showCalendar) {
+        VrddhihCalendarDialog(
+            selectedDate = dateState.selectedDate,
+            today = dateState.today,
+            onDateSelected = { date ->
+                onDateSelected(date)
+                showCalendar = false
+            },
+            onTodaySelected = {
+                onSelectToday()
+                showCalendar = false
+            },
+            onDismiss = { showCalendar = false },
+        )
     }
 }
 
@@ -116,10 +171,18 @@ private fun PreviewNotice(modifier: Modifier = Modifier) {
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFF04060C, widthDp = 390, heightDp = 1800)
+@Preview(showBackground = true, backgroundColor = 0xFF04060C, widthDp = 390, heightDp = 2000)
 @Composable
 private fun DashboardScreenPreview() {
+    val today = LocalDate.now()
     VrddhihTheme {
-        DashboardScreen(uiState = DashboardMockData.initialState(), onToggleQuestPreview = {})
+        DashboardScreen(
+            uiState = DashboardMockData.initialState(),
+            dateState = DateSelectionState(today = today, selectedDate = today),
+            dayLog = DayLogUiState.Loaded(today, DayActivity(questCompletions = 0, habitCheckIns = 0, transactions = 0)),
+            onToggleQuestPreview = {},
+            onDateSelected = {},
+            onSelectToday = {},
+        )
     }
 }

@@ -2,8 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Local-only app: Android Auto Backup and device-to-device transfer are disabled so personal
+         records never leave this device. No INTERNET permission is declared. -->
     <application
-        android:allowBackup="true"
+        android:name=".VrddhihApplication"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"

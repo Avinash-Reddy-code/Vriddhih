@@ -15,8 +15,8 @@
     <!-- Dashboard -->
     <string name="dashboard_eyebrow">System · Status window</string>
     <string name="dashboard_title">Status</string>
-    <string name="dashboard_subtitle">Your daily progression at a glance</string>
-    <string name="dashboard_preview_notice">Preview mode. Everything on this screen is sample data and nothing is saved yet.</string>
+    <string name="dashboard_subtitle">Your daily progression at a glance.</string>
+    <string name="dashboard_preview_notice">Preview mode. Panels marked Sample show sample data, and nothing in them is saved.</string>
     <string name="dashboard_player_label">Player</string>
     <string name="dashboard_level_short">LV</string>
     <string name="dashboard_level_content_description">Level %1$d</string>
@@ -50,6 +50,38 @@
     </plurals>
     <string name="deadline_countdown">D-%1$d</string>
     <string name="dashboard_footer">Vrddhih keeps your data on this device. No account, no cloud, no sync.</string>
+
+    <!-- Date selection -->
+    <string name="calendar_open">Open calendar</string>
+    <string name="calendar_previous_month">Previous month</string>
+    <string name="calendar_next_month">Next month</string>
+    <string name="calendar_close">Close</string>
+    <string name="calendar_today">Today</string>
+    <string name="date_state_today">Today</string>
+    <string name="date_state_selected">Selected</string>
+    <string name="date_state_today_selected">Today, selected</string>
+    <string name="date_relative_today">Today</string>
+    <string name="date_relative_yesterday">Yesterday</string>
+    <string name="date_relative_tomorrow">Tomorrow</string>
+    <plurals name="date_relative_days_ago">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+    <plurals name="date_relative_days_ahead">
+        <item quantity="one">In %d day</item>
+        <item quantity="other">In %d days</item>
+    </plurals>
+
+    <!-- Day log: real records stored on this device -->
+    <string name="day_log_title">Day log</string>
+    <string name="day_log_badge">On device</string>
+    <string name="day_log_loading">Reading local records…</string>
+    <string name="day_log_empty">No activity recorded for this day.</string>
+    <string name="day_log_unavailable">Local records could not be read.</string>
+    <string name="day_log_quests">Quests done</string>
+    <string name="day_log_habits">Check-ins</string>
+    <string name="day_log_transactions">Transactions</string>
+    <string name="day_log_note">Quests, habits and finances will log here once those features arrive.</string>
 
     <!-- Feature placeholders -->
     <string name="placeholder_status_title">Not yet unlocked</string>

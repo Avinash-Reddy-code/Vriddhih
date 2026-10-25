@@ -8,7 +8,7 @@ It is a private, local-only app. There are no accounts and no cloud. Each instal
 
 - Kotlin, Jetpack Compose, Material 3
 - Navigation Compose, AndroidX ViewModel and Lifecycle
-- MVVM (repositories arrive with the database in Phase 1)
+- MVVM with repositories over a local Room (SQLite) database, using KSP for the Room compiler
 - Gradle Kotlin DSL with a version catalog (`gradle/libs.versions.toml`)
 - AGP 9.4.1 with built-in Kotlin (KGP 2.2.10), Gradle 9.6.0, compileSdk/targetSdk 37, minSdk 26
 
@@ -54,11 +54,19 @@ From Android Studio, press **Run ▶**. From a terminal (fish):
 ```fish
 set -x JAVA_HOME ~/Applications/android-studio/jbr
 ./gradlew assembleDebug      # APK: app/build/outputs/apk/debug/app-debug.apk
-./gradlew test               # JVM unit tests
+./gradlew test               # JVM unit tests, including Robolectric Room tests
 ./gradlew installDebug       # Install on a connected device or emulator
 ```
 
-## Current status: Phase 0 (Foundation and UI)
+## Current status: Phase 1 (Local database and calendar), awaiting review
+
+- Room database `vrddhih.db` (schema v1, exported to `app/schemas/`) with entities, DAOs and repositories for quests, completions, habits, check-ins, goals, milestones, transactions and XP events. Wiring is manual (`AppContainer`).
+- Dashboard date strip: a 7-day window centred on the selected day, with today and the selected day highlighted separately.
+- Calendar dialog (top-right icon): Sunday-first month grid, month navigation, Close and Today.
+- A "Day log" panel shows real on-device record counts for the selected day. These are empty until later phases add data entry.
+- Android Auto Backup and device-to-device transfer are disabled (`allowBackup="false"`, with exclude-all rules).
+
+### Phase 0 (Foundation and UI)
 
 - The dark hunter-system design system: tokens, typography and reusable components.
 - A dashboard with player status, daily summary, today's quests, habit progress, goals and upcoming deadlines. **All of it is sample data**, labelled "Sample" in the UI.
@@ -71,8 +79,8 @@ set -x JAVA_HOME ~/Applications/android-studio/jbr
 
 | Phase | Scope |
 |-------|-------|
-| 0 | Foundation and UI *(current)* |
-| 1 | Room database and local data architecture |
+| 0 | Foundation and UI *(done)* |
+| 1 | Room database, local data architecture and calendar *(in review)* |
 | 2 | Tasks and recurring quests |
 | 3 | Goals and habits |
 | 4 | XP, levels and achievements |

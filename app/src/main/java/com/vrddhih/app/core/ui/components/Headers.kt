@@ -25,27 +25,34 @@ import com.vrddhih.app.core.theme.VrddhihColors
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
 
-/** Top-of-screen title block: a small system "eyebrow" label above the screen title. */
+/**
+ * Top-of-screen title block: a small system "eyebrow" label above the screen title, with an optional
+ * [action] aligned to the top right.
+ */
 @Composable
 fun ScreenHeader(
     eyebrow: String,
     title: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    action: (@Composable () -> Unit)? = null,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(text = eyebrow.uppercase(), style = VrddhihTextStyles.SystemLabel, color = VrddhihColors.Ice)
-        Spacer(Modifier.height(VrddhihSpacing.xs))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineMedium,
-            color = VrddhihColors.TextPrimary,
-            modifier = Modifier.semantics { heading() },
-        )
-        if (subtitle != null) {
-            Spacer(Modifier.height(VrddhihSpacing.xxs))
-            Text(text = subtitle, style = MaterialTheme.typography.bodyMedium, color = VrddhihColors.TextSecondary)
+    Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = eyebrow.uppercase(), style = VrddhihTextStyles.SystemLabel, color = VrddhihColors.Ice)
+            Spacer(Modifier.height(VrddhihSpacing.xs))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineMedium,
+                color = VrddhihColors.TextPrimary,
+                modifier = Modifier.semantics { heading() },
+            )
+            if (subtitle != null) {
+                Spacer(Modifier.height(VrddhihSpacing.xxs))
+                Text(text = subtitle, style = MaterialTheme.typography.bodyMedium, color = VrddhihColors.TextSecondary)
+            }
         }
+        action?.invoke()
     }
 }
 

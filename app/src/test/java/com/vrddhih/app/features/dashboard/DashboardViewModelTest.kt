@@ -1,21 +1,122 @@
 package com.vrddhih.app.features.dashboard
 
+import com.vrddhih.app.core.data.repository.DayActivity
 import com.vrddhih.app.features.dashboard.mock.DashboardMockData
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Before
 import org.junit.Test
+import java.io.IOException
+import java.time.LocalDate
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
 
+    private val today = LocalDate.of(2026, 10, 25)
+    private val emptyDay = DayActivity(questCompletions = 0, habitCheckIns = 0, transactions = 0)
+
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    private fun viewModel(source: (LocalDate) -> Flow<DayActivity> = { flowOf(emptyDay) }) =
+        DashboardViewModel(observeDayActivity = source, currentDate = { today })
+
+    private fun TestScope.collectDayLog(viewModel: DashboardViewModel) {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.dayLog.collect { } }
+    }
+
     @Test
-    fun initialState_comesFromMockData() {
-        val viewModel = DashboardViewModel()
+    fun initialState_comesFromMockDataAndSelectsToday() {
+        val viewModel = viewModel()
         assertEquals(DashboardMockData.initialState(), viewModel.uiState.value)
+        assertEquals(today, viewModel.dateState.value.selectedDate)
+        assertEquals(today, viewModel.dateState.value.today)
+    }
+
+    @Test
+    fun selectDate_updatesDateStateAndQueriesThatDay() = runTest {
+        val requested = mutableListOf<LocalDate>()
+        val viewModel = viewModel { date ->
+            requested += date
+            flowOf(DayActivity(questCompletions = date.dayOfMonth, habitCheckIns = 0, transactions = 0))
+        }
+        collectDayLog(viewModel)
+        val target = LocalDate.of(2026, 11, 2)
+
+        viewModel.selectDate(target)
+
+        assertEquals(target, viewModel.dateState.value.selectedDate)
+        assertEquals(today, viewModel.dateState.value.today)
+        assertEquals(listOf(today, target), requested)
+        assertEquals(
+            DayLogUiState.Loaded(target, DayActivity(questCompletions = 2, habitCheckIns = 0, transactions = 0)),
+            viewModel.dayLog.value,
+        )
+    }
+
+    @Test
+    fun selectToday_returnsToTodayAfterBrowsing() = runTest {
+        val viewModel = viewModel()
+        collectDayLog(viewModel)
+        viewModel.selectDate(LocalDate.of(2024, 2, 29))
+
+        viewModel.selectToday()
+
+        assertEquals(today, viewModel.dateState.value.selectedDate)
+        assertEquals(DayLogUiState.Loaded(today, emptyDay), viewModel.dayLog.value)
+    }
+
+    @Test
+    fun selectingADate_doesNotChangeSampleContent() {
+        val viewModel = viewModel()
+        val before = viewModel.uiState.value
+
+        viewModel.selectDate(LocalDate.of(2026, 10, 20))
+
+        assertEquals(before, viewModel.uiState.value)
+    }
+
+    @Test
+    fun emptyDatabase_reportsAnEmptyDayRatherThanFabricatedActivity() = runTest {
+        val viewModel = viewModel()
+        collectDayLog(viewModel)
+
+        val state = viewModel.dayLog.value as DayLogUiState.Loaded
+        assertEquals(true, state.activity.isEmpty)
+    }
+
+    @Test
+    fun failingSource_reportsUnavailableWithoutBreakingDateSelection() = runTest {
+        val viewModel = viewModel { flow { throw IOException("disk error") } }
+        collectDayLog(viewModel)
+
+        assertEquals(DayLogUiState.Unavailable, viewModel.dayLog.value)
+        viewModel.selectDate(LocalDate.of(2026, 10, 26))
+        assertEquals(LocalDate.of(2026, 10, 26), viewModel.dateState.value.selectedDate)
     }
 
     @Test
     fun toggleQuestPreview_flipsOnlyTheTargetQuest() {
-        val viewModel = DashboardViewModel()
+        val viewModel = viewModel()
         val before = viewModel.uiState.value
         val target = before.quests.first()
 
@@ -29,7 +130,7 @@ class DashboardViewModelTest {
 
     @Test
     fun toggleQuestPreview_twiceRestoresOriginalState() {
-        val viewModel = DashboardViewModel()
+        val viewModel = viewModel()
         val before = viewModel.uiState.value
         val id = before.quests.last().id
 
@@ -41,7 +142,7 @@ class DashboardViewModelTest {
 
     @Test
     fun toggleQuestPreview_unknownIdIsIgnored() {
-        val viewModel = DashboardViewModel()
+        val viewModel = viewModel()
         val before = viewModel.uiState.value
 
         viewModel.toggleQuestPreview("does-not-exist")
