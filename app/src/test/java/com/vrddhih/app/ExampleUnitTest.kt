@@ -1,4 +1,4 @@
-package com.example.vrddhih
+package com.vrddhih.app
 
 import org.junit.Test
 
