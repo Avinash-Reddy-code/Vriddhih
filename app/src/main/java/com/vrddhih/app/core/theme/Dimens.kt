@@ -14,14 +14,17 @@ object VrddhihSpacing {
 
 object VrddhihRadii {
     val xs = 6.dp
-    val sm = 8.dp
+    val sm = 10.dp
     val md = 14.dp
-    val lg = 20.dp
+    val lg = 16.dp
+    val xl = 20.dp
+    val pill = 999.dp
 }
 
 object VrddhihDimens {
     val ContentMaxWidth = 640.dp
     val BorderWidth = 1.dp
+    val BorderWidthThick = 1.5.dp
     val ProgressBarHeight = 8.dp
     val IconBadgeSize = 52.dp
 }

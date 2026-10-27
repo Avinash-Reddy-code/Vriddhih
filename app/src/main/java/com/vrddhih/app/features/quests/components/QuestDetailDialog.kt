@@ -193,17 +193,16 @@ fun QuestDetailDialog(
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                Button(
-                    onClick = onToggleCompletion,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (occurrence.isCompleted) VrddhihColors.PanelRaised else VrddhihColors.Electric,
-                        contentColor = if (occurrence.isCompleted) VrddhihColors.TextPrimary else VrddhihColors.Void,
-                    ),
-                ) {
-                    Text(
-                        stringResource(
-                            if (occurrence.isCompleted) R.string.quest_action_reopen else R.string.quest_action_complete,
-                        ),
+                if (occurrence.isCompleted) {
+                    com.vrddhih.app.core.ui.components.VrddhihSecondaryButton(
+                        text = stringResource(R.string.quest_action_reopen),
+                        onClick = onToggleCompletion,
+                    )
+                } else {
+                    com.vrddhih.app.core.ui.components.VrddhihPrimaryButton(
+                        text = stringResource(R.string.quest_action_complete),
+                        onClick = onToggleCompletion,
+                        accent = VrddhihColors.NeonGreen,
                     )
                 }
             }

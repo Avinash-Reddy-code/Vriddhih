@@ -210,17 +210,25 @@ private fun DateStripCell(
     }
 
     val stateLabel = dateStateLabel(isSelected = isSelected, isToday = isToday)
+    val glowColor = if (highlightToday) VrddhihColors.Cyan else VrddhihColors.Electric
 
     Box(
         modifier = Modifier
             .width(width)
             .height(DateCellHeight)
+            .then(
+                if (isSelected) {
+                    Modifier.neonPillGlow(glowColor, spread = 4.dp, cornerRadius = VrddhihRadii.md, alpha = 0.28f)
+                } else {
+                    Modifier
+                },
+            )
             .clip(shape)
             .then(
                 when {
                     highlightToday -> Modifier.background(VrddhihBrushes.Energy)
                     isSelected -> Modifier.background(VrddhihColors.PanelRaised)
-                    else -> Modifier.background(VrddhihColors.Panel.copy(alpha = 0.7f))
+                    else -> Modifier.background(VrddhihColors.Panel)
                 },
             )
             .border(if (isSelected) 1.5.dp else 1.dp, borderColor, shape)

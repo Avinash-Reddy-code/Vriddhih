@@ -88,8 +88,24 @@ fun ProgressRing(
                 size = arcSize,
                 style = Stroke(width = stroke),
             )
+            if (animated > 0.02f) {
+                drawArc(
+                    brush = Brush.linearGradient(
+                        listOf(
+                            VrddhihColors.Electric.copy(alpha = 0.30f),
+                            VrddhihColors.Cyan.copy(alpha = 0.30f),
+                        ),
+                    ),
+                    startAngle = -90f,
+                    sweepAngle = 360f * animated,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = stroke * 1.8f, cap = StrokeCap.Round),
+                )
+            }
             drawArc(
-                brush = Brush.linearGradient(listOf(VrddhihColors.Electric, VrddhihColors.Ice)),
+                brush = Brush.linearGradient(listOf(VrddhihColors.Electric, VrddhihColors.Cyan)),
                 startAngle = -90f,
                 sweepAngle = 360f * animated,
                 useCenter = false,

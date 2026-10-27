@@ -24,9 +24,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.Menu
 import com.vrddhih.app.core.data.local.entity.CATEGORY_OTHER_ID
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -37,8 +34,6 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -66,6 +61,7 @@ import com.vrddhih.app.core.theme.VrddhihRadii
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
 import com.vrddhih.app.core.theme.VrddhihTheme
+import com.vrddhih.app.core.ui.components.AnchoredPrimaryAction
 import com.vrddhih.app.core.ui.components.ScreenHeader
 import com.vrddhih.app.core.ui.components.SystemPanel
 import com.vrddhih.app.core.ui.components.SystemTag
@@ -94,7 +90,6 @@ fun QuestsRoute(
         uiState = uiState,
         onFilterChange = viewModel::setFilter,
         onSortChange = viewModel::setSort,
-        onSearchChange = viewModel::setSearchQuery,
         onToggleCompletion = viewModel::toggleCompletion,
         onOpenCreate = {
             viewModel.openCreateQuest()
@@ -127,7 +122,6 @@ fun QuestsScreen(
     uiState: QuestsUiState,
     onFilterChange: (QuestFilter) -> Unit,
     onSortChange: (QuestSort) -> Unit,
-    onSearchChange: (String) -> Unit,
     onToggleCompletion: (QuestOccurrence) -> Unit,
     onOpenCreate: () -> Unit,
     onOpenDetail: (QuestOccurrence) -> Unit,
@@ -163,52 +157,63 @@ fun QuestsScreen(
                     eyebrow = stringResource(R.string.quests_eyebrow),
                     title = stringResource(R.string.quests_title),
                     subtitle = stringResource(R.string.quests_description),
-                    action = {
-                        IconButton(
-                            onClick = onNavigateToCategories,
-                            modifier = Modifier.size(48.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Menu,
-                                contentDescription = stringResource(R.string.categories_title),
-                                tint = VrddhihColors.Ice,
-                            )
-                        }
-                    },
                 )
             }
 
-            item(key = "search-and-sort") {
+            item(key = "filter-chips") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    OutlinedTextField(
-                        value = uiState.searchQuery,
-                        onValueChange = onSearchChange,
-                        placeholder = { Text(stringResource(R.string.quests_search_hint), color = VrddhihColors.TextMuted) },
-                        leadingIcon = {
-                            Icon(Icons.Filled.Search, contentDescription = null, tint = VrddhihColors.TextMuted)
-                        },
-                        trailingIcon = {
-                            if (uiState.searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { onSearchChange("") }) {
-                                    Icon(Icons.Filled.Clear, contentDescription = "Clear", tint = VrddhihColors.TextMuted)
-                                }
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .consumeHorizontalNestedScroll()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.xs),
+                    ) {
+                        QuestFilter.entries.forEach { filter ->
+                            val isSelected = uiState.filter == filter
+                            val count = uiState.counts[filter] ?: 0
+                            val labelRes = when (filter) {
+                                QuestFilter.ALL -> R.string.quests_filter_all
+                                QuestFilter.TODAY -> R.string.quests_filter_today
+                                QuestFilter.UPCOMING -> R.string.quests_filter_upcoming
+                                QuestFilter.OVERDUE -> R.string.quests_filter_overdue
+                                QuestFilter.COMPLETED -> R.string.quests_filter_completed
                             }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = VrddhihColors.TextPrimary,
-                            unfocusedTextColor = VrddhihColors.TextPrimary,
-                            focusedBorderColor = VrddhihColors.Ice,
-                            unfocusedBorderColor = VrddhihColors.Outline,
-                            cursorColor = VrddhihColors.Ice,
-                        ),
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                    )
 
-                    Spacer(Modifier.width(VrddhihSpacing.sm))
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { onFilterChange(filter) },
+                                label = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(stringResource(labelRes))
+                                        Spacer(Modifier.width(VrddhihSpacing.xs))
+                                        Text(
+                                            text = count.toString(),
+                                            style = VrddhihTextStyles.NumericSmall,
+                                            color = if (isSelected) VrddhihColors.Ice else VrddhihColors.TextMuted,
+                                        )
+                                    }
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = VrddhihColors.Panel,
+                                    labelColor = VrddhihColors.TextSecondary,
+                                    selectedContainerColor = VrddhihColors.Electric.copy(alpha = 0.22f),
+                                    selectedLabelColor = VrddhihColors.Ice,
+                                ),
+                                border = FilterChipDefaults.filterChipBorder(
+                                    enabled = true,
+                                    selected = isSelected,
+                                    borderColor = VrddhihColors.Outline,
+                                    selectedBorderColor = VrddhihColors.Ice,
+                                ),
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.width(VrddhihSpacing.xs))
 
                     Box {
                         IconButton(
@@ -246,56 +251,6 @@ fun QuestsScreen(
                                 )
                             }
                         }
-                    }
-                }
-            }
-
-            item(key = "filter-chips") {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .consumeHorizontalNestedScroll()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.xs),
-                ) {
-                    QuestFilter.entries.forEach { filter ->
-                        val isSelected = uiState.filter == filter
-                        val count = uiState.counts[filter] ?: 0
-                        val labelRes = when (filter) {
-                            QuestFilter.ALL -> R.string.quests_filter_all
-                            QuestFilter.TODAY -> R.string.quests_filter_today
-                            QuestFilter.UPCOMING -> R.string.quests_filter_upcoming
-                            QuestFilter.OVERDUE -> R.string.quests_filter_overdue
-                            QuestFilter.COMPLETED -> R.string.quests_filter_completed
-                        }
-
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { onFilterChange(filter) },
-                            label = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(stringResource(labelRes))
-                                    Spacer(Modifier.width(VrddhihSpacing.xs))
-                                    Text(
-                                        text = count.toString(),
-                                        style = VrddhihTextStyles.NumericSmall,
-                                        color = if (isSelected) VrddhihColors.Ice else VrddhihColors.TextMuted,
-                                    )
-                                }
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = VrddhihColors.Panel,
-                                labelColor = VrddhihColors.TextSecondary,
-                                selectedContainerColor = VrddhihColors.Electric.copy(alpha = 0.22f),
-                                selectedLabelColor = VrddhihColors.Ice,
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = isSelected,
-                                borderColor = VrddhihColors.Outline,
-                                selectedBorderColor = VrddhihColors.Ice,
-                            ),
-                        )
                     }
                 }
             }
@@ -341,49 +296,12 @@ fun QuestsScreen(
             }
         }
 
-        // Prominent, restrained New Quest action anchored at bottom above bottom navigation
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .widthIn(max = VrddhihDimens.ContentMaxWidth)
-                .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            VrddhihColors.Void.copy(alpha = 0.88f),
-                            VrddhihColors.Void,
-                        ),
-                    ),
-                )
-                .padding(horizontal = VrddhihSpacing.lg, vertical = VrddhihSpacing.md),
-        ) {
-            Button(
-                onClick = onOpenCreate,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(VrddhihRadii.md),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = VrddhihColors.Electric,
-                    contentColor = VrddhihColors.Void,
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = VrddhihColors.Void,
-                )
-                Spacer(Modifier.width(VrddhihSpacing.sm))
-                Text(
-                    text = stringResource(R.string.quests_new_action).uppercase(),
-                    style = VrddhihTextStyles.TagLabel,
-                    color = VrddhihColors.Void,
-                )
-            }
-        }
+        AnchoredPrimaryAction(
+            text = stringResource(R.string.quests_new_action),
+            onClick = onOpenCreate,
+            accent = VrddhihColors.Electric,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 
     if (uiState.isDetailOpen && uiState.selectedOccurrence != null) {
@@ -417,7 +335,6 @@ private fun QuestsScreenPreview() {
             uiState = QuestsUiState(),
             onFilterChange = {},
             onSortChange = {},
-            onSearchChange = {},
             onToggleCompletion = {},
             onOpenCreate = {},
             onOpenDetail = {},

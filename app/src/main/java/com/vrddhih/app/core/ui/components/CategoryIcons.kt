@@ -167,25 +167,21 @@ object CategoryIcons {
     }
 }
 
-/** A curated accessible color palette for custom category accent colors against the dark navy theme. */
+/** A curated accessible color palette for custom category accent colors matching the ultra-dark neon system. */
 object CategoryColors {
     /** Each pair is (ARGB int, human-readable label). */
     val PALETTE: List<Pair<Int, String>> = listOf(
-        0xFF7CD3FF.toInt() to "Ice Blue",
-        0xFF2F8CFF.toInt() to "Electric Blue",
-        0xFF80DEEA.toInt() to "Cyan",
-        0xFF69F0AE.toInt() to "Mint Green",
-        0xFF45E0B0.toInt() to "Teal",
-        0xFFB39DDB.toInt() to "Lavender",
-        0xFFCE93D8.toInt() to "Violet",
+        0xFF59F581.toInt() to "Neon Green",
+        0xFF5795FF.toInt() to "Electric Blue",
+        0xFF38E5E5.toInt() to "Cyan",
+        0xFFB388FF.toInt() to "Violet",
+        0xFFFF72C6.toInt() to "Pink",
+        0xFFFFC45C.toInt() to "Amber",
+        0xFFFF7777.toInt() to "Coral",
+        0xFFFFD700.toInt() to "Gold",
+        0xFF00E5FF.toInt() to "Aqua",
+        0xFF69F0AE.toInt() to "Mint",
         0xFFF48FB1.toInt() to "Rose",
-        0xFFEF9A9A.toInt() to "Salmon",
-        0xFFFFAB91.toInt() to "Peach",
-        0xFFFFCC80.toInt() to "Amber",
-        0xFFFFB74D.toInt() to "Orange",
-        0xFFA5D6A7.toInt() to "Sage",
-        0xFF80CBC4.toInt() to "Seafoam",
-        0xFF7A8DAB.toInt() to "Steel",
-        0xFFE8F2FF.toInt() to "White",
+        0xFFF5F6F8.toInt() to "Near White",
     )
 }

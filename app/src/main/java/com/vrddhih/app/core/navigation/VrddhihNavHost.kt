@@ -35,7 +35,9 @@ fun VrddhihNavHost(
         key = { page -> TopLevelDestination.entries[page].route },
     ) { page ->
         when (TopLevelDestination.entries[page]) {
-            TopLevelDestination.DASHBOARD -> DashboardRoute()
+            TopLevelDestination.DASHBOARD -> DashboardRoute(
+                onNavigateToCategories = onNavigateToCategories,
+            )
             TopLevelDestination.QUESTS -> QuestsRoute(
                 onNavigateToCategories = onNavigateToCategories,
                 onNavigateToCreateQuest = onNavigateToCreateQuest,
@@ -56,7 +58,11 @@ fun VrddhihNavHost(
     modifier: Modifier = Modifier,
     pagerState: PagerState = rememberPagerState(initialPage = 0, pageCount = { TopLevelDestination.entries.size }),
 ) {
-    VrddhihNavHost(pagerState = pagerState, modifier = modifier)
+    VrddhihNavHost(
+        pagerState = pagerState,
+        modifier = modifier,
+        onNavigateToCategories = { navController.navigate("categories") },
+    )
 }
 
 /**

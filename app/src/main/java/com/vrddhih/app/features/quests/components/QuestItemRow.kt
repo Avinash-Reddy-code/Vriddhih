@@ -72,7 +72,12 @@ fun QuestItemRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        accent = if (isOverdue) VrddhihColors.Danger else VrddhihColors.OutlineBright,
+        accent = when {
+            isOverdue -> VrddhihColors.Danger
+            occurrence.isCompleted -> VrddhihColors.NeonGreen
+            else -> VrddhihColors.OutlineBright
+        },
+        glow = occurrence.isCompleted,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -194,31 +199,11 @@ fun QuestCheckbox(
     checked: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(VrddhihRadii.xs)
-    val fill by animateColorAsState(
-        targetValue = if (checked) VrddhihColors.Electric else Color.Transparent,
-        label = "checkboxFill",
+    com.vrddhih.app.core.ui.components.VrddhihCheckbox(
+        checked = checked,
+        onCheckedChange = null,
+        accent = VrddhihColors.NeonGreen,
+        visualSize = 24.dp,
+        modifier = modifier,
     )
-    val borderColor by animateColorAsState(
-        targetValue = if (checked) VrddhihColors.Ice else VrddhihColors.OutlineBright,
-        label = "checkboxBorder",
-    )
-
-    Box(
-        modifier = modifier
-            .size(24.dp)
-            .clip(shape)
-            .background(fill)
-            .border(1.5.dp, borderColor, shape),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (checked) {
-            Icon(
-                imageVector = Icons.Filled.Check,
-                contentDescription = null,
-                tint = VrddhihColors.Void,
-                modifier = Modifier.size(16.dp),
-            )
-        }
-    }
 }

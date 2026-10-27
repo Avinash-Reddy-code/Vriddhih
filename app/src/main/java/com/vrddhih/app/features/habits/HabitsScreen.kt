@@ -1,27 +1,19 @@
 package com.vrddhih.app.features.habits
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.TrackChanges
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -45,11 +37,10 @@ import com.vrddhih.app.R
 import com.vrddhih.app.core.data.habit.HabitScheduler
 import com.vrddhih.app.core.theme.VrddhihColors
 import com.vrddhih.app.core.theme.VrddhihDimens
-import com.vrddhih.app.core.theme.VrddhihRadii
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
+import com.vrddhih.app.core.ui.components.AnchoredPrimaryAction
 import com.vrddhih.app.core.ui.components.CalendarToggleButton
-import com.vrddhih.app.core.ui.components.DateStrip
 import com.vrddhih.app.core.ui.components.ScreenHeader
 import com.vrddhih.app.core.ui.components.VrddhihCalendarDialog
 import com.vrddhih.app.features.habits.components.HabitEditorDialog
@@ -79,7 +70,12 @@ fun HabitsScreen(
                 modifier = Modifier
                     .widthIn(max = VrddhihDimens.ContentMaxWidth)
                     .fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = VrddhihSpacing.lg, vertical = VrddhihSpacing.xl),
+                contentPadding = PaddingValues(
+                    start = VrddhihSpacing.lg,
+                    end = VrddhihSpacing.lg,
+                    top = VrddhihSpacing.xl,
+                    bottom = 96.dp,
+                ),
                 verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.lg),
             ) {
                 // Header
@@ -92,52 +88,13 @@ fun HabitsScreen(
                     )
                 }
 
-                // Date Strip
-                item(key = "date-strip") {
-                    DateStrip(
-                        selectedDate = dateState.selectedDate,
-                        today = dateState.today,
-                        onDateSelected = viewModel::selectDate,
-                        onSelectToday = viewModel::selectToday,
-                        onShiftWindow = viewModel::shiftWindow,
-                    )
-                }
-
-                // Add Habit Bar
+                // Habit Count Bar
                 item(key = "action-bar") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = "${uiState.habitItems.size} HABITS",
-                            style = VrddhihTextStyles.SystemLabel,
-                            color = VrddhihColors.TextMuted,
-                        )
-
-                        Button(
-                            onClick = viewModel::openCreateHabit,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = VrddhihColors.Electric,
-                                contentColor = VrddhihColors.Void,
-                            ),
-                            shape = RoundedCornerShape(VrddhihRadii.sm),
-                            contentPadding = PaddingValues(horizontal = VrddhihSpacing.md, vertical = VrddhihSpacing.xs),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(Modifier.width(VrddhihSpacing.xs))
-                            Text(
-                                text = stringResource(R.string.habits_new_action).uppercase(),
-                                style = VrddhihTextStyles.TagLabel,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
+                    Text(
+                        text = "${uiState.habitItems.size} HABITS",
+                        style = VrddhihTextStyles.SystemLabel,
+                        color = VrddhihColors.TextMuted,
+                    )
                 }
 
                 // Loading Spinner or Habit Items
@@ -154,7 +111,7 @@ fun HabitsScreen(
                     }
                 } else if (uiState.habitItems.isEmpty()) {
                     item(key = "empty") {
-                        EmptyHabitsState(onAddHabit = viewModel::openCreateHabit)
+                        EmptyHabitsState()
                     }
                 } else {
                     items(
@@ -184,6 +141,12 @@ fun HabitsScreen(
                     }
                 }
             }
+
+            AnchoredPrimaryAction(
+                text = stringResource(R.string.habits_new_action),
+                onClick = viewModel::openCreateHabit,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
         }
     }
 
@@ -216,7 +179,6 @@ fun HabitsScreen(
 
 @Composable
 private fun EmptyHabitsState(
-    onAddHabit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -246,18 +208,6 @@ private fun EmptyHabitsState(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = VrddhihSpacing.lg, vertical = VrddhihSpacing.xxs),
             )
-        }
-        Button(
-            onClick = onAddHabit,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = VrddhihColors.PanelRaised,
-                contentColor = VrddhihColors.Ice,
-            ),
-            shape = RoundedCornerShape(VrddhihRadii.sm),
-        ) {
-            Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(VrddhihSpacing.xs))
-            Text(stringResource(R.string.habits_new_action).uppercase(), style = VrddhihTextStyles.TagLabel)
         }
     }
 }

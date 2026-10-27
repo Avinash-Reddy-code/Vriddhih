@@ -12,6 +12,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -19,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.vrddhih.app.core.theme.VrddhihBrushes
 import com.vrddhih.app.core.theme.VrddhihColors
 import com.vrddhih.app.core.theme.VrddhihDimens
+import com.vrddhih.app.core.ui.components.neonAmbientGlow
 
 @Composable
 fun VrddhihBottomBar(
@@ -45,10 +47,19 @@ fun VrddhihBottomBar(
                     selected = selected,
                     onClick = { onNavigate(destination) },
                     icon = {
-                        Icon(
-                            imageVector = if (selected) destination.selectedIcon else destination.unselectedIcon,
-                            contentDescription = null,
-                        )
+                        Box(
+                            modifier = if (selected) {
+                                Modifier.neonAmbientGlow(VrddhihColors.Electric, radius = 8.dp, alpha = 0.32f)
+                            } else {
+                                Modifier
+                            },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = if (selected) destination.selectedIcon else destination.unselectedIcon,
+                                contentDescription = null,
+                            )
+                        }
                     },
                     label = {
                         Text(
@@ -59,9 +70,9 @@ fun VrddhihBottomBar(
                         )
                     },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = VrddhihColors.Frost,
-                        selectedTextColor = VrddhihColors.Ice,
-                        indicatorColor = VrddhihColors.Electric.copy(alpha = 0.22f),
+                        selectedIconColor = VrddhihColors.Electric,
+                        selectedTextColor = VrddhihColors.TextPrimary,
+                        indicatorColor = VrddhihColors.Electric.copy(alpha = 0.18f),
                         unselectedIconColor = VrddhihColors.TextMuted,
                         unselectedTextColor = VrddhihColors.TextMuted,
                     ),

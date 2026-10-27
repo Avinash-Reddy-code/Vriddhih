@@ -14,17 +14,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Flag
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,6 +41,7 @@ import com.vrddhih.app.core.theme.VrddhihDimens
 import com.vrddhih.app.core.theme.VrddhihRadii
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
+import com.vrddhih.app.core.ui.components.AnchoredPrimaryAction
 import com.vrddhih.app.features.goals.components.GoalCard
 import com.vrddhih.app.features.goals.components.GoalEditorDialog
 
@@ -102,47 +99,65 @@ fun GoalsScreen(
         modifier = modifier.fillMaxSize(),
         color = VrddhihColors.Void,
     ) {
-        Column(
+        Box(
             modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.TopCenter,
         ) {
-            Header(onAddClick = onOpenCreateGoal)
+            Column(
+                modifier = Modifier
+                    .widthIn(max = VrddhihDimens.ContentMaxWidth)
+                    .fillMaxSize(),
+            ) {
+                Header()
 
-            FilterTabs(
-                selectedFilter = uiState.filter,
-                onFilterSelected = onFilterChange,
-            )
+                FilterTabs(
+                    selectedFilter = uiState.filter,
+                    onFilterSelected = onFilterChange,
+                )
 
-            if (uiState.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = VrddhihColors.Electric)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = VrddhihSpacing.lg, vertical = VrddhihSpacing.md),
-                    verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.md),
-                ) {
-                    if (uiState.filteredGoals.isEmpty()) {
-                        item {
-                            EmptyState(onCreateGoal = onOpenCreateGoal)
-                        }
-                    } else {
-                        items(uiState.filteredGoals, key = { it.goal.id }) { goalWithConfigs ->
-                            GoalCard(
-                                goalWithConfigs = goalWithConfigs,
-                                categories = uiState.categories,
-                                onEdit = { onOpenEditGoal(goalWithConfigs) },
-                                onToggleMilestone = onToggleMilestone,
-                                onUpdateNumericProgress = onUpdateNumericProgress,
-                                onUpdateCompletionCount = onUpdateCompletionCount,
-                            )
+                if (uiState.isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(color = VrddhihColors.Electric)
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            start = VrddhihSpacing.lg,
+                            end = VrddhihSpacing.lg,
+                            top = VrddhihSpacing.md,
+                            bottom = 96.dp,
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.md),
+                    ) {
+                        if (uiState.filteredGoals.isEmpty()) {
+                            item {
+                                EmptyState()
+                            }
+                        } else {
+                            items(uiState.filteredGoals, key = { it.goal.id }) { goalWithConfigs ->
+                                GoalCard(
+                                    goalWithConfigs = goalWithConfigs,
+                                    categories = uiState.categories,
+                                    onEdit = { onOpenEditGoal(goalWithConfigs) },
+                                    onToggleMilestone = onToggleMilestone,
+                                    onUpdateNumericProgress = onUpdateNumericProgress,
+                                    onUpdateCompletionCount = onUpdateCompletionCount,
+                                )
+                            }
                         }
                     }
                 }
             }
+
+            AnchoredPrimaryAction(
+                text = stringResource(R.string.goals_new_action),
+                onClick = onOpenCreateGoal,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
         }
     }
 
@@ -158,38 +173,23 @@ fun GoalsScreen(
 }
 
 @Composable
-private fun Header(onAddClick: () -> Unit) {
-    Row(
+private fun Header() {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = VrddhihSpacing.lg, vertical = VrddhihSpacing.md),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column {
-            Text(
-                text = stringResource(R.string.goals_eyebrow).uppercase(),
-                style = VrddhihTextStyles.SystemLabel,
-                color = VrddhihColors.Ice,
-            )
-            Text(
-                text = stringResource(R.string.goals_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = VrddhihColors.TextPrimary,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-
-        IconButton(
-            onClick = onAddClick,
-            modifier = Modifier.size(48.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Add,
-                contentDescription = stringResource(R.string.goals_new_action),
-                tint = VrddhihColors.Electric,
-            )
-        }
+        Text(
+            text = stringResource(R.string.goals_eyebrow).uppercase(),
+            style = VrddhihTextStyles.SystemLabel,
+            color = VrddhihColors.Ice,
+        )
+        Text(
+            text = stringResource(R.string.goals_title),
+            style = MaterialTheme.typography.titleLarge,
+            color = VrddhihColors.TextPrimary,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 
@@ -255,7 +255,7 @@ private fun GoalFilterTab(
 }
 
 @Composable
-private fun EmptyState(onCreateGoal: () -> Unit) {
+private fun EmptyState() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -282,25 +282,5 @@ private fun EmptyState(onCreateGoal: () -> Unit) {
             style = MaterialTheme.typography.bodyMedium,
             color = VrddhihColors.TextMuted,
         )
-        Spacer(Modifier.height(VrddhihSpacing.lg))
-        Button(
-            onClick = onCreateGoal,
-            colors = ButtonDefaults.buttonColors(containerColor = VrddhihColors.Electric),
-            shape = RoundedCornerShape(VrddhihRadii.sm),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Add,
-                contentDescription = null,
-                tint = Color.Black,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.size(VrddhihSpacing.xs))
-            Text(
-                text = stringResource(R.string.goals_new_action).uppercase(),
-                style = VrddhihTextStyles.SystemLabel,
-                color = Color.Black,
-                fontWeight = FontWeight.Bold,
-            )
-        }
     }
 }

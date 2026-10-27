@@ -709,8 +709,11 @@ fun GoalEditorDialog(
                                 cCurrentCount,
                             )
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = VrddhihColors.Electric),
-                        shape = RoundedCornerShape(VrddhihRadii.sm),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = VrddhihColors.NeonGreen,
+                            contentColor = VrddhihColors.Void,
+                        ),
+                        shape = RoundedCornerShape(VrddhihRadii.md),
                         modifier = Modifier
                             .weight(2f)
                             .height(48.dp),

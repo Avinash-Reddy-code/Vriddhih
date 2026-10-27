@@ -50,14 +50,16 @@ fun MockDataBadge(modifier: Modifier = Modifier) {
 fun SystemIconBadge(
     icon: ImageVector,
     modifier: Modifier = Modifier,
-    tint: Color = VrddhihColors.Ice,
+    tint: Color = VrddhihColors.Cyan,
 ) {
+    val shape = RoundedCornerShape(VrddhihRadii.md)
     Box(
         modifier = modifier
             .size(VrddhihDimens.IconBadgeSize)
-            .clip(CircleShape)
-            .background(tint.copy(alpha = 0.12f))
-            .border(VrddhihDimens.BorderWidth, tint.copy(alpha = 0.5f), CircleShape),
+            .then(Modifier.neonAmbientGlow(tint, radius = 8.dp, alpha = 0.26f))
+            .clip(shape)
+            .background(VrddhihColors.PanelRaised)
+            .border(VrddhihDimens.BorderWidth, tint.copy(alpha = 0.45f), shape),
         contentAlignment = Alignment.Center,
     ) {
         Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(26.dp))

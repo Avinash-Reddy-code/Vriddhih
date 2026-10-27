@@ -81,14 +81,14 @@ fun CalendarToggleButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .size(38.dp)
                 .clip(CircleShape)
-                .background(VrddhihColors.Electric.copy(alpha = 0.12f))
-                .border(1.dp, VrddhihColors.Electric.copy(alpha = 0.55f), CircleShape),
+                .background(VrddhihColors.PanelRaised)
+                .border(1.dp, VrddhihColors.OutlineBright, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Outlined.CalendarMonth,
                 contentDescription = stringResource(R.string.calendar_open),
-                tint = VrddhihColors.Ice,
+                tint = VrddhihColors.Cyan,
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -298,6 +298,7 @@ private fun CalendarDayCell(
         modifier = Modifier
             .fillMaxSize()
             .padding(3.dp)
+            .then(if (isSelected) Modifier.neonAmbientGlow(VrddhihColors.Cyan, radius = 6.dp, alpha = 0.35f) else Modifier)
             .clip(CircleShape)
             .then(if (isSelected) Modifier.background(VrddhihBrushes.Energy) else Modifier)
             .then(

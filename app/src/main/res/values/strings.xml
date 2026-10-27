@@ -11,8 +11,16 @@
 
     <!-- Shared -->
     <string name="mock_data_badge">Sample</string>
+    <string name="action_loading">Loading…</string>
+    <string name="stepper_decrease">Decrease</string>
+    <string name="stepper_increase">Increase</string>
+    <string name="form_required_indicator">Required</string>
+    <string name="form_select_date">Select date</string>
+    <string name="form_clear_date">Clear date</string>
+    <string name="form_select_time">Select time</string>
 
     <!-- Dashboard -->
+    <string name="nav_drawer_open">Open menu</string>
     <string name="dashboard_eyebrow">System · Status window</string>
     <string name="dashboard_title">Status</string>
     <string name="dashboard_subtitle">Your daily progression at a glance.</string>
@@ -157,6 +165,7 @@
     <string name="quest_error_no_weekdays">Select at least one weekday</string>
     <string name="quest_error_interval_invalid">Interval must be at least 1</string>
     <string name="categories_title">Categories</string>
+    <string name="categories_new_action">New Category</string>
     <string name="quest_discard_title">Discard quest?</string>
     <string name="quest_discard_message">You have unsaved changes. Are you sure you want to discard them?</string>
     <string name="quest_keep_editing">Keep editing</string>

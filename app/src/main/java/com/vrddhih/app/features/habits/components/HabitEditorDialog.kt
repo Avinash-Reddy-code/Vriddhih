@@ -771,10 +771,10 @@ fun HabitEditorDialog(
                                 onDismiss()
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = VrddhihColors.Electric,
+                                containerColor = VrddhihColors.NeonGreen,
                                 contentColor = VrddhihColors.Void,
                             ),
-                            shape = RoundedCornerShape(VrddhihRadii.sm),
+                            shape = RoundedCornerShape(VrddhihRadii.md),
                         ) {
                             Text(
                                 text = stringResource(R.string.habits_save_action).uppercase(),

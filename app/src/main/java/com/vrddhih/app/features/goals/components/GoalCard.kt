@@ -107,6 +107,7 @@ fun GoalCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onEdit),
+        accent = if (isCompleted) VrddhihColors.NeonGreen else VrddhihColors.OutlineBright,
         glow = isCompleted,
     ) {
         Column(
@@ -184,14 +185,10 @@ fun GoalCard(
             }
 
             // Progress Bar
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = if (isCompleted) VrddhihColors.Ice else VrddhihColors.Electric,
-                trackColor = VrddhihColors.PanelRaised,
+            com.vrddhih.app.core.ui.components.SystemProgressBar(
+                progress = progress,
+                height = 6.dp,
+                brush = if (isCompleted) com.vrddhih.app.core.theme.VrddhihBrushes.NeonSuccess else com.vrddhih.app.core.theme.VrddhihBrushes.Energy,
             )
 
             // Progress Readout Row
@@ -300,29 +297,12 @@ fun GoalCard(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm),
                                     ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(22.dp)
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .background(
-                                                    if (isMCompleted) VrddhihColors.Electric else Color.Transparent,
-                                                )
-                                                .border(
-                                                    width = 1.5.dp,
-                                                    color = if (isMCompleted) VrddhihColors.Electric else VrddhihColors.Outline,
-                                                    shape = RoundedCornerShape(4.dp),
-                                                ),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            if (isMCompleted) {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.Check,
-                                                    contentDescription = null,
-                                                    tint = Color.Black,
-                                                    modifier = Modifier.size(14.dp),
-                                                )
-                                            }
-                                        }
+                                        com.vrddhih.app.core.ui.components.VrddhihCheckbox(
+                                            checked = isMCompleted,
+                                            onCheckedChange = null,
+                                            accent = VrddhihColors.NeonGreen,
+                                            visualSize = 22.dp,
+                                        )
 
                                         Text(
                                             text = milestone.title,

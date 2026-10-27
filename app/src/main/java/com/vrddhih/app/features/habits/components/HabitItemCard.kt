@@ -90,6 +90,7 @@ fun HabitItemCard(
 
     SystemPanel(
         glow = isCompleted,
+        accent = if (isCompleted) VrddhihColors.NeonGreen else VrddhihColors.OutlineBright,
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(
@@ -230,7 +231,7 @@ private fun YesNoControls(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(VrddhihRadii.sm))
-            .background(if (isCompleted) VrddhihColors.Electric.copy(alpha = 0.12f) else VrddhihColors.PanelRaised)
+            .background(if (isCompleted) VrddhihColors.NeonGreen.copy(alpha = 0.12f) else VrddhihColors.PanelRaised)
             .clickable { if (isCompleted) onUndo() else onComplete() }
             .padding(horizontal = VrddhihSpacing.md, vertical = VrddhihSpacing.sm),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -239,35 +240,16 @@ private fun YesNoControls(
         Text(
             text = if (isCompleted) stringResource(R.string.habit_state_done).uppercase() else stringResource(R.string.habit_state_pending).uppercase(),
             style = VrddhihTextStyles.TagLabel,
-            color = if (isCompleted) VrddhihColors.Electric else VrddhihColors.TextSecondary,
+            color = if (isCompleted) VrddhihColors.NeonGreen else VrddhihColors.TextSecondary,
             fontWeight = FontWeight.Bold,
         )
 
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(
-                    if (isCompleted) {
-                        Brush.horizontalGradient(listOf(VrddhihColors.Electric, VrddhihColors.Ice))
-                    } else {
-                        Brush.horizontalGradient(listOf(VrddhihColors.Void, VrddhihColors.Void))
-                    },
-                )
-                .border(
-                    width = 1.dp,
-                    color = if (isCompleted) Color.Transparent else VrddhihColors.Outline,
-                    shape = CircleShape,
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Check,
-                contentDescription = null,
-                tint = if (isCompleted) VrddhihColors.Void else VrddhihColors.TextMuted,
-                modifier = Modifier.size(20.dp),
-            )
-        }
+        com.vrddhih.app.core.ui.components.VrddhihCheckbox(
+            checked = isCompleted,
+            onCheckedChange = null,
+            accent = VrddhihColors.NeonGreen,
+            visualSize = 28.dp,
+        )
     }
 }
 
@@ -507,18 +489,12 @@ private fun ChecklistControls(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm),
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(22.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(if (checked) VrddhihColors.Electric else VrddhihColors.Void)
-                                .border(1.dp, if (checked) Color.Transparent else VrddhihColors.Outline, RoundedCornerShape(4.dp)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (checked) {
-                                Icon(Icons.Outlined.Check, contentDescription = null, tint = VrddhihColors.Void, modifier = Modifier.size(16.dp))
-                            }
-                        }
+                        com.vrddhih.app.core.ui.components.VrddhihCheckbox(
+                            checked = checked,
+                            onCheckedChange = null,
+                            accent = VrddhihColors.Violet,
+                            visualSize = 22.dp,
+                        )
 
                         Text(
                             text = item.title,

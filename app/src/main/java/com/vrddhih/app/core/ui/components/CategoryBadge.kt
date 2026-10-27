@@ -6,17 +6,20 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -94,6 +97,7 @@ fun CuteCategoryBadge(
     Box(
         modifier = modifier
             .size(size)
+            .then(if (isSelected) Modifier.neonAmbientGlow(accentColor, radius = 8.dp, alpha = 0.35f) else Modifier)
             .clip(shape)
             .background(backgroundBrush)
             .border(if (isSelected) 1.5.dp else 1.dp, borderBrush, shape),
@@ -290,3 +294,52 @@ fun CategoryPill(
         )
     }
 }
+
+/**
+ * Standardized horizontal category selection row for all editor forms (Quests, Habits, Goals).
+ *
+ * Eliminates per-editor category selection duplication by rendering a unified, horizontally
+ * scrolling row of [CategorySelectionTile] items, followed by [CreateCustomCategoryTile] when
+ * [onNewCategoryClick] is supplied.
+ *
+ * @param categories Active categories list.
+ * @param selectedCategoryId Currently selected category ID, or null.
+ * @param onCategorySelected Invoked with the newly selected category ID (or null if toggled off).
+ * @param modifier Modifier applied to the row.
+ * @param onNewCategoryClick Optional callback to trigger category creation.
+ * @param allowDeselect Whether clicking the already-selected category deselects it.
+ */
+@Composable
+fun CategoryPickerRow(
+    categories: List<CategoryEntity>,
+    selectedCategoryId: String?,
+    onCategorySelected: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+    onNewCategoryClick: (() -> Unit)? = null,
+    allowDeselect: Boolean = true,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        categories.forEach { category ->
+            val isSelected = category.id == selectedCategoryId
+            CategorySelectionTile(
+                category = category,
+                isSelected = isSelected,
+                onClick = {
+                    val next = if (allowDeselect && isSelected) null else category.id
+                    onCategorySelected(next)
+                },
+            )
+        }
+
+        if (onNewCategoryClick != null) {
+            CreateCustomCategoryTile(onClick = onNewCategoryClick)
+        }
+    }
+}
+

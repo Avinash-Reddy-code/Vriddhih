@@ -956,25 +956,12 @@ fun QuestEditorScreen(
 
                     Spacer(Modifier.height(VrddhihSpacing.md))
 
-                    // 9. PRIMARY CREATE QUEST OR SAVE CHANGES ACTION
-                    Button(
+                    com.vrddhih.app.core.ui.components.VrddhihPrimaryButton(
+                        text = stringResource(if (isEdit) R.string.quest_save_confirm else R.string.quest_create_title),
                         onClick = onSave,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(VrddhihRadii.md),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = VrddhihColors.Electric,
-                            contentColor = VrddhihColors.Void,
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
-                    ) {
-                        Text(
-                            text = stringResource(if (isEdit) R.string.quest_save_confirm else R.string.quest_create_title).uppercase(),
-                            style = VrddhihTextStyles.TagLabel,
-                            color = VrddhihColors.Void,
-                        )
-                    }
+                        accent = VrddhihColors.NeonGreen,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
 
                     Spacer(Modifier.height(VrddhihSpacing.xl))
                 }
