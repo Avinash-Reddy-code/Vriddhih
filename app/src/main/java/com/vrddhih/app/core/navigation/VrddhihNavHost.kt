@@ -1,47 +1,62 @@
 package com.vrddhih.app.core.navigation
 
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vrddhih.app.features.dashboard.DashboardRoute
 import com.vrddhih.app.features.finance.FinanceScreen
-import com.vrddhih.app.features.goals.GoalsScreen
+import com.vrddhih.app.features.goals.GoalsRoute
 import com.vrddhih.app.features.habits.HabitsScreen
-import com.vrddhih.app.features.quests.QuestsScreen
+import com.vrddhih.app.features.quests.QuestsRoute
+import com.vrddhih.app.features.quests.QuestsViewModel
 import com.vrddhih.app.features.statistics.StatisticsScreen
+import java.time.LocalDate
 
-private const val FADE_IN_MILLIS = 220
-private const val FADE_OUT_MILLIS = 160
+@Composable
+fun VrddhihNavHost(
+    pagerState: PagerState,
+    modifier: Modifier = Modifier,
+    onNavigateToCategories: () -> Unit = {},
+    onNavigateToCreateQuest: () -> Unit = {},
+    onNavigateToEditQuest: (Long, LocalDate) -> Unit = { _, _ -> },
+    questsViewModel: QuestsViewModel = viewModel(factory = QuestsViewModel.Factory),
+) {
+    HorizontalPager(
+        state = pagerState,
+        modifier = modifier.fillMaxSize(),
+        key = { page -> TopLevelDestination.entries[page].route },
+    ) { page ->
+        when (TopLevelDestination.entries[page]) {
+            TopLevelDestination.DASHBOARD -> DashboardRoute()
+            TopLevelDestination.QUESTS -> QuestsRoute(
+                onNavigateToCategories = onNavigateToCategories,
+                onNavigateToCreateQuest = onNavigateToCreateQuest,
+                onNavigateToEditQuest = onNavigateToEditQuest,
+                viewModel = questsViewModel,
+            )
+            TopLevelDestination.HABITS -> HabitsScreen()
+            TopLevelDestination.GOALS -> GoalsRoute()
+            TopLevelDestination.FINANCE -> FinanceScreen()
+            TopLevelDestination.STATS -> StatisticsScreen()
+        }
+    }
+}
 
 @Composable
 fun VrddhihNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
+    pagerState: PagerState = rememberPagerState(initialPage = 0, pageCount = { TopLevelDestination.entries.size }),
 ) {
-    NavHost(
-        navController = navController,
-        startDestination = TopLevelDestination.DASHBOARD.route,
-        modifier = modifier,
-        enterTransition = { fadeIn(tween(FADE_IN_MILLIS)) },
-        exitTransition = { fadeOut(tween(FADE_OUT_MILLIS)) },
-        popEnterTransition = { fadeIn(tween(FADE_IN_MILLIS)) },
-        popExitTransition = { fadeOut(tween(FADE_OUT_MILLIS)) },
-    ) {
-        composable(TopLevelDestination.DASHBOARD.route) { DashboardRoute() }
-        composable(TopLevelDestination.QUESTS.route) { QuestsScreen() }
-        composable(TopLevelDestination.HABITS.route) { HabitsScreen() }
-        composable(TopLevelDestination.GOALS.route) { GoalsScreen() }
-        composable(TopLevelDestination.FINANCE.route) { FinanceScreen() }
-        composable(TopLevelDestination.STATS.route) { StatisticsScreen() }
-    }
+    VrddhihNavHost(pagerState = pagerState, modifier = modifier)
 }
 
 /**

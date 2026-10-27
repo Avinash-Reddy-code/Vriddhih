@@ -3,33 +3,40 @@ package com.vrddhih.app.core.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -44,49 +51,127 @@ import com.vrddhih.app.core.theme.VrddhihColors
 import com.vrddhih.app.core.theme.VrddhihRadii
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
+import com.vrddhih.app.core.ui.gesture.consumeHorizontalNestedScroll
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 import java.time.format.TextStyle as JavaTextStyle
 
-private val DateCellMinWidth = 44.dp
+const val DATE_STRIP_TEST_TAG = "date_strip"
+
+private val DateCellWidth = 50.dp
 private val DateCellHeight = 68.dp
 private val DateCellGap = 6.dp
+private const val TIMELINE_PAST_DAYS = 180L
+private const val TIMELINE_FUTURE_DAYS = 180L
+private const val TOTAL_TIMELINE_DAYS = (TIMELINE_PAST_DAYS + TIMELINE_FUTURE_DAYS + 1).toInt()
 
 /**
- * A horizontal row of selectable days. Cells share the available width, and the row scrolls
- * horizontally when the screen is too narrow for the minimum touch-friendly cell width.
+ * A horizontally scrollable date timeline inspired by HabitNow.
+ *
+ * Efficiently streams dates around [today] via a [LazyRow]. Ordinary finger-following scrolling
+ * moves dates naturally with no sudden jumps, bounces, or page-turn animations. Tapping a date
+ * updates [selectedDate] without resetting scroll position. A sleek Today quick-action button
+ * appears whenever historical or future dates are active.
  */
 @Composable
 fun DateStrip(
-    days: List<LocalDate>,
     selectedDate: LocalDate,
     today: LocalDate,
     onDateSelected: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
+    onSelectToday: () -> Unit = {},
+    days: List<LocalDate> = emptyList(),
+    onShiftWindow: (direction: Int) -> Unit = {},
 ) {
     val locale = currentLocale()
     val labelFormatter = rememberFullDateFormatter()
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val count = days.size.coerceAtLeast(1)
-        val cellWidth = maxOf(DateCellMinWidth, (maxWidth - DateCellGap * (count - 1)) / count)
+    val anchorDate = remember(today) { today.minusDays(TIMELINE_PAST_DAYS) }
+
+    val selectedIndex = remember(anchorDate, selectedDate) {
+        ChronoUnit.DAYS.between(anchorDate, selectedDate).toInt().coerceIn(0, TOTAL_TIMELINE_DAYS - 1)
+    }
+
+    // Initialize list near the active selection so today is visible by default
+    val listState: LazyListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = (selectedIndex - 2).coerceAtLeast(0),
+    )
+
+    // Smoothly scroll into view only if selected date changed externally and is off-screen
+    LaunchedEffect(selectedDate) {
+        val visibleIndices = listState.layoutInfo.visibleItemsInfo.map { it.index }
+        if (visibleIndices.isNotEmpty() && selectedIndex !in visibleIndices) {
+            listState.animateScrollToItem((selectedIndex - 2).coerceAtLeast(0))
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag(DATE_STRIP_TEST_TAG),
+    ) {
+        // Month/Year header with contextual "TODAY" return action
         Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(DateCellGap),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = VrddhihSpacing.xs, vertical = VrddhihSpacing.xxs),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            days.forEach { date ->
-                key(date) {
-                    DateStripCell(
-                        date = date,
-                        weekday = date.dayOfWeek.getDisplayName(JavaTextStyle.SHORT, locale),
-                        accessibilityLabel = labelFormatter.format(date),
-                        isSelected = date == selectedDate,
-                        isToday = date == today,
-                        width = cellWidth,
-                        onClick = { onDateSelected(date) },
-                    )
+            val monthName = selectedDate.month.getDisplayName(JavaTextStyle.FULL_STANDALONE, locale)
+                .replaceFirstChar { it.titlecase(locale) }
+            Text(
+                text = "${monthName.uppercase(locale)} ${selectedDate.year}",
+                style = VrddhihTextStyles.TagLabel,
+                color = VrddhihColors.TextSecondary,
+            )
+
+            if (selectedDate != today) {
+                TodayReturnButton(onClick = onSelectToday)
+            }
+        }
+
+        Spacer(Modifier.height(VrddhihSpacing.xs))
+
+        // Horizontally scrollable date timeline
+        LazyRow(
+            state = listState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .consumeHorizontalNestedScroll()
+                .semantics {
+                    contentDescription = "Date timeline"
+                },
+            horizontalArrangement = Arrangement.spacedBy(DateCellGap),
+            contentPadding = PaddingValues(horizontal = VrddhihSpacing.xs),
+        ) {
+            items(
+                count = TOTAL_TIMELINE_DAYS,
+                key = { index -> anchorDate.plusDays(index.toLong()).toEpochDay() },
+            ) { index ->
+                val date = anchorDate.plusDays(index.toLong())
+                val isSelected = date == selectedDate
+                val isToday = date == today
+                val isFirstOfMonth = date.dayOfMonth == 1
+
+                val weekdayShort = if (isFirstOfMonth) {
+                    date.month.getDisplayName(JavaTextStyle.SHORT, locale).uppercase(locale)
+                } else {
+                    date.dayOfWeek.getDisplayName(JavaTextStyle.SHORT, locale).uppercase(locale)
                 }
+
+                DateStripCell(
+                    date = date,
+                    weekday = weekdayShort,
+                    accessibilityLabel = labelFormatter.format(date),
+                    isSelected = isSelected,
+                    isToday = isToday,
+                    isFirstOfMonth = isFirstOfMonth,
+                    width = DateCellWidth,
+                    onClick = { onDateSelected(date) },
+                )
             }
         }
     }
@@ -99,11 +184,13 @@ private fun DateStripCell(
     accessibilityLabel: String,
     isSelected: Boolean,
     isToday: Boolean,
+    isFirstOfMonth: Boolean,
     width: Dp,
     onClick: () -> Unit,
 ) {
     val shape = RoundedCornerShape(VrddhihRadii.md)
     val highlightToday = isSelected && isToday
+
     val contentColor by animateColorAsState(
         targetValue = when {
             highlightToday -> VrddhihColors.Void
@@ -113,12 +200,15 @@ private fun DateStripCell(
         },
         label = "date-cell-content",
     )
+
     val borderColor = when {
         highlightToday -> VrddhihColors.Ice
         isSelected -> VrddhihColors.Electric
         isToday -> VrddhihColors.Ice.copy(alpha = 0.6f)
+        isFirstOfMonth -> VrddhihColors.OutlineBright
         else -> VrddhihColors.Outline
     }
+
     val stateLabel = dateStateLabel(isSelected = isSelected, isToday = isToday)
 
     Box(
@@ -145,11 +235,54 @@ private fun DateStripCell(
             modifier = Modifier.clearAndSetSemantics { },
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(text = weekday, style = VrddhihTextStyles.TagLabel, color = contentColor)
+            Text(
+                text = weekday,
+                style = VrddhihTextStyles.TagLabel,
+                color = if (isFirstOfMonth && !isSelected) VrddhihColors.Ice else contentColor,
+                maxLines = 1,
+            )
             Spacer(Modifier.height(VrddhihSpacing.xxs))
-            Text(text = date.dayOfMonth.toString(), style = VrddhihTextStyles.NumericMedium, color = contentColor)
+            Text(
+                text = date.dayOfMonth.toString(),
+                style = VrddhihTextStyles.NumericMedium,
+                color = contentColor,
+            )
             Spacer(Modifier.height(VrddhihSpacing.xxs))
-            TodayDot(visible = isToday, color = if (highlightToday) VrddhihColors.Void else VrddhihColors.Ice)
+            TodayDot(
+                visible = isToday,
+                color = if (highlightToday) VrddhihColors.Void else VrddhihColors.Ice,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TodayReturnButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .height(28.dp)
+            .clip(RoundedCornerShape(VrddhihRadii.lg))
+            .background(VrddhihColors.Electric.copy(alpha = 0.14f))
+            .border(1.dp, VrddhihColors.Ice.copy(alpha = 0.5f), RoundedCornerShape(VrddhihRadii.lg))
+            .selectable(selected = false, role = Role.Button, onClick = onClick)
+            .padding(horizontal = VrddhihSpacing.sm),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.MyLocation,
+                contentDescription = null,
+                tint = VrddhihColors.Ice,
+                modifier = Modifier.size(12.dp),
+            )
+            Text(
+                text = stringResource(R.string.date_strip_today_action).uppercase(),
+                style = VrddhihTextStyles.TagLabel,
+                color = VrddhihColors.Ice,
+            )
         }
     }
 }
@@ -168,7 +301,6 @@ internal fun TodayDot(visible: Boolean, color: Color, modifier: Modifier = Modif
     }
 }
 
-/** Spoken state for a day cell, or null when the day is neither today nor selected. */
 @Composable
 internal fun dateStateLabel(isSelected: Boolean, isToday: Boolean): String? = when {
     isSelected && isToday -> stringResource(R.string.date_state_today_selected)
@@ -181,9 +313,9 @@ internal fun dateStateLabel(isSelected: Boolean, isToday: Boolean): String? = wh
 @ReadOnlyComposable
 fun currentLocale(): Locale = LocalConfiguration.current.locales[0]
 
-/** Locale-aware full date, for example "Sunday, October 25, 2026" in US English. */
 @Composable
 fun rememberFullDateFormatter(): DateTimeFormatter {
     val locale = currentLocale()
     return remember(locale) { DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale) }
 }
+

@@ -20,10 +20,16 @@ Every phase stays within the local-only rule: no accounts, no cloud, no sync, an
 - Android Auto Backup and device transfer are disabled (decided in Phase 1).
 - A dashboard date strip and calendar dialog, plus a selected-day "Day log" read from Room.
 
-## Phase 2: Tasks and recurring quests
+## Phase 2: Tasks and recurring quests *(implemented, awaiting review)*
 
-- Create, edit, complete and delete quests, with priority, due date and XP reward.
-- Recurring quests (daily, weekly, custom) and a daily quest board.
+- Real task & quest CRUD engine backed by Room (definitions, occurrences, overrides, completions and activity log).
+- Scope-aware recurring quest management (Single occurrence, This & future, All occurrences).
+- Dynamic recurrence derivation (Daily, Weekdays, Weekly, Monthly with month-length & leap year clamping).
+- Horizontal swipe navigation between all 6 primary destinations with synchronized bottom bar and back navigation.
+- Swipeable 7-day date strip with forward/backward shifting and accessible navigation.
+- Swipeable monthly calendar dialog with animated month transitions and arrow navigation.
+- Dashboard integration with real active quests, date-aware headings, and distinct Day Log activity timeline.
+- Quests screen with filter chips, category/title search, sorting, and hunter-themed dialogs.
 
 ## Phase 3: Goals and habits
 

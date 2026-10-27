@@ -94,3 +94,49 @@ A recurring quest is a **definition**. Its occurrences are calculated (`QuestEnt
 - `DashboardViewModel` owns one holder and derives `dayLog` with `flatMapLatest` over `DayActivityRepository.observeDayActivity(date)`. Failures map to `DayLogUiState.Unavailable`, so the calendar keeps working.
 - UI: `DateStrip` and `VrddhihCalendarDialog` (`core/ui/components`) are stateless about the selection. The calendar's displayed month is local, saveable UI state, so browsing months never changes the selection. Tapping a day or Today reports a date; Close reports nothing.
 - Backup: `allowBackup="false"`, and the extraction and backup rules exclude all domains, so data stays on the device.
+
+## Phase 2: Task Engine, Quest Management and Swipe Navigation
+
+### Schema (v2)
+
+Migration `MIGRATION_1_2` upgrades the database from version 1 to 2 with no destructive fallback:
+
+1. **`quests` modifications:** Added `notes` (TEXT), `due_time` (INTEGER, minutes from midnight), `recurrence_interval` (INTEGER default 1), `updated_at` (INTEGER millis). `recurrence` enum supports `NONE`, `DAILY`, `WEEKDAYS`, `WEEKLY`, `MONTHLY`.
+2. **`quest_occurrence_overrides` table:** Stores per-occurrence changes without splitting the recurring definition:
+   - `quest_id` (FK → quests CASCADE)
+   - `occurrence_date` (INTEGER epoch day)
+   - `is_skipped` (INTEGER 0/1 for deleting a single occurrence)
+   - `title`, `notes`, `priority`, `due_time` (nullable overrides; null means inherit definition)
+   - `updated_at` (INTEGER millis)
+   - Unique index: `(quest_id, occurrence_date)`
+3. **`activity_events` table:** Append-only activity ledger powering the historical Day Log:
+   - `id` (autoincrement PK)
+   - `type` (TEXT: `QUEST_COMPLETED`, `QUEST_REOPENED`)
+   - `quest_id` (FK → quests SET NULL)
+   - `quest_title` (TEXT preserved even if quest is later deleted)
+   - `occurrence_date` (INTEGER epoch day)
+   - `occurred_at` (INTEGER millis)
+   - Indexes: `occurrence_date`, `quest_id`
+
+### Domain & Engine Design
+
+- **`QuestBook`:** Pure immutable container holding active definitions, all completions, and overrides.
+- **`QuestOccurrences`:** Generates concrete `QuestOccurrence` models on-demand. Evaluates recurrence (`Daily`, `Weekdays`, `Weekly`, `Monthly` with month-length leap-year clamping), overrides, and completion records.
+- **`QuestLists`:** Pure projections applying filters (`ALL`, `TODAY`, `UPCOMING`, `OVERDUE`, `COMPLETED`), search queries, and sorts (`DEADLINE`, `PRIORITY`, `CREATED`).
+- **Scope-aware mutations:**
+  - `OCCURRENCE`: Updates or skips only that specific date via `quest_occurrence_overrides`.
+  - `FUTURE`: Truncates the original quest's `endDate` to the prior day and spawns a new definition starting from the target date, moving completions and overrides forward.
+  - `ALL`: Updates the base definition directly or cascades deletion.
+
+### Horizontal Swiping & Gesture Hierarchy
+
+- **Screen-level navigation:** Root `HorizontalPager` across the 6 top-level destinations, bidirectionally synchronized with `VrddhihBottomBar`. Android system back (`BackHandler`) returns from secondary tabs to the Dashboard before exiting.
+- **DateStrip gesture:** Swipe gestures shift the 7-day window backward or forward smoothly, with accessibility action semantics.
+- **CalendarDialog gesture:** Horizontal drag swipes advance or rewind months with animated directional transitions.
+- **Gesture conflict isolation:** Reusable `Modifier.consumeHorizontalNestedScroll()` attached to horizontal chip bars and internal scroll areas ensures horizontal drags within children are consumed locally without propagating to the outer screen pager.
+
+### Dashboard: Today's Quests vs. Day Log
+
+- **Today's Quests (`RealQuestsPanel`):** Actionable task list for the selected date. Displays checkable quest cards, overdue markers, priority tags, and XP indicators. Reflects live Room occurrences.
+- **Day Log (`DayLogPanel`):** Strictly historical activity summary for the selected date. Shows completed counts, habit check-ins, finance transactions, and an event timeline (`QUEST_COMPLETED`, `QUEST_REOPENED`) with timestamps. Contains no duplicate actionable cards.
+

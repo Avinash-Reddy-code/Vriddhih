@@ -37,6 +37,10 @@ class DateSelectionStateHolder(
         _state.update { it.copy(selectedDate = date) }
     }
 
+    fun shiftWindow(direction: Int) {
+        _state.update { it.copy(selectedDate = it.selectedDate.plusDays(direction * 7L)) }
+    }
+
     fun selectToday() {
         val today = currentDate()
         _state.value = DateSelectionState(today = today, selectedDate = today)

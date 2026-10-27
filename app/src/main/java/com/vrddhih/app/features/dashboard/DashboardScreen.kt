@@ -54,6 +54,10 @@ fun DashboardRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val dateState by viewModel.dateState.collectAsStateWithLifecycle()
     val dayLog by viewModel.dayLog.collectAsStateWithLifecycle()
+    val occurrences by viewModel.occurrences.collectAsStateWithLifecycle()
+    val habits by viewModel.habits.collectAsStateWithLifecycle()
+    val goals by viewModel.goals.collectAsStateWithLifecycle()
+    val dayLogData by viewModel.dayLogData.collectAsStateWithLifecycle()
 
     // Re-read the device date on every resume so "today" stays correct past midnight or after a time-zone change.
     LifecycleResumeEffect(viewModel) {
@@ -65,8 +69,18 @@ fun DashboardRoute(
         uiState = uiState,
         dateState = dateState,
         dayLog = dayLog,
+        occurrences = occurrences,
+        habits = habits,
+        goals = goals,
+        dayLogData = dayLogData,
+        hasRealQuests = viewModel.hasRealQuests,
+        hasRealHabits = viewModel.hasRealHabits,
+        hasRealGoals = viewModel.hasRealGoals,
+        onToggleQuest = viewModel::toggleQuest,
+        onToggleHabit = viewModel::toggleHabit,
         onToggleQuestPreview = viewModel::toggleQuestPreview,
         onDateSelected = viewModel::selectDate,
+        onShiftWindow = viewModel::shiftWindow,
         onSelectToday = viewModel::selectToday,
         modifier = modifier,
     )
@@ -77,8 +91,18 @@ fun DashboardScreen(
     uiState: DashboardUiState,
     dateState: DateSelectionState,
     dayLog: DayLogUiState,
-    onToggleQuestPreview: (String) -> Unit,
+    occurrences: List<com.vrddhih.app.core.data.quest.QuestOccurrence> = emptyList(),
+    habits: List<DashboardHabitItem> = emptyList(),
+    goals: List<DashboardGoalItem> = emptyList(),
+    dayLogData: com.vrddhih.app.core.data.quest.DayLog? = null,
+    hasRealQuests: Boolean = false,
+    hasRealHabits: Boolean = false,
+    hasRealGoals: Boolean = false,
+    onToggleQuest: (com.vrddhih.app.core.data.quest.QuestOccurrence) -> Unit = {},
+    onToggleHabit: (Long) -> Unit = {},
+    onToggleQuestPreview: (String) -> Unit = {},
     onDateSelected: (LocalDate) -> Unit,
+    onShiftWindow: (Int) -> Unit = {},
     onSelectToday: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -102,19 +126,65 @@ fun DashboardScreen(
             }
             item(key = "date-strip") {
                 DateStrip(
-                    days = dateState.visibleWeek,
                     selectedDate = dateState.selectedDate,
                     today = dateState.today,
                     onDateSelected = onDateSelected,
+                    onSelectToday = onSelectToday,
                 )
             }
-            item(key = "day-log") { DayLogPanel(dateState = dateState, dayLog = dayLog) }
-            item(key = "notice") { PreviewNotice() }
+            // 3. Daily progress summary
+            item(key = "summary") {
+                if (hasRealQuests) {
+                    val completed = occurrences.count { it.isCompleted }
+                    val remaining = occurrences.count { !it.isCompleted }
+                    val xp = occurrences.filter { it.isCompleted }.sumOf { it.quest.xpReward }
+                    DailySummaryPanel(
+                        completedCount = completed,
+                        remainingCount = remaining,
+                        xpEarned = xp,
+                        isSample = false,
+                    )
+                } else {
+                    DailySummaryPanel(uiState = uiState)
+                }
+            }
+            // 4. Today's Quests (or date-specific heading)
+            item(key = "quests") {
+                if (hasRealQuests) {
+                    RealQuestsPanel(
+                        date = dateState.selectedDate,
+                        isToday = dateState.isTodaySelected,
+                        occurrences = occurrences,
+                        onToggleQuest = onToggleQuest,
+                    )
+                } else {
+                    TodaysQuestsPanel(quests = uiState.quests, onToggleQuest = onToggleQuestPreview)
+                }
+            }
+            // 5. Compact Day Log or recent-activity summary
+            item(key = "day-log") {
+                DayLogPanel(dateState = dateState, dayLog = dayLog, dayLogData = dayLogData)
+            }
             item(key = "player") { PlayerStatusPanel(player = uiState.player) }
-            item(key = "summary") { DailySummaryPanel(uiState = uiState) }
-            item(key = "quests") { TodaysQuestsPanel(quests = uiState.quests, onToggleQuest = onToggleQuestPreview) }
-            item(key = "habits") { HabitProgressPanel(uiState = uiState) }
-            item(key = "goals") { GoalsPanel(goals = uiState.goals) }
+            item(key = "habits") {
+                if (hasRealHabits) {
+                    RealHabitProgressPanel(
+                        date = dateState.selectedDate,
+                        isToday = dateState.isTodaySelected,
+                        habits = habits,
+                        onToggleHabit = onToggleHabit,
+                    )
+                } else {
+                    HabitProgressPanel(uiState = uiState)
+                }
+            }
+            item(key = "goals") {
+                if (hasRealGoals) {
+                    RealGoalsPanel(goals = goals)
+                } else {
+                    GoalsPanel(goals = uiState.goals)
+                }
+            }
             item(key = "deadlines") { DeadlinesPanel(deadlines = uiState.deadlines) }
             item(key = "footer") {
                 Text(

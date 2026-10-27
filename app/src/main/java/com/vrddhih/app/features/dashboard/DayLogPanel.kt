@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -27,17 +29,22 @@ import com.vrddhih.app.core.ui.components.SystemTag
 import com.vrddhih.app.core.ui.components.rememberFullDateFormatter
 import kotlin.math.absoluteValue
 
-/** Shows the selected day and the real records stored on this device for it (none until later phases). */
+/** Shows the selected day and the real records stored on this device for it. */
 @Composable
 fun DayLogPanel(
     dateState: DateSelectionState,
     dayLog: DayLogUiState,
+    dayLogData: com.vrddhih.app.core.data.quest.DayLog? = null,
     modifier: Modifier = Modifier,
 ) {
     val formatter = rememberFullDateFormatter()
+    val timeFormatter = remember { java.time.format.DateTimeFormatter.ofPattern("HH:mm", java.util.Locale.getDefault()) }
+
+    val isFuture = dateState.offsetFromToday > 0
+
     SystemPanel(modifier = modifier) {
         SectionHeader(title = stringResource(R.string.day_log_title)) {
-            SystemTag(text = stringResource(R.string.day_log_badge), color = VrddhihColors.Success)
+            SystemTag(text = stringResource(R.string.day_log_history_badge), color = VrddhihColors.Ice)
         }
         Spacer(Modifier.height(VrddhihSpacing.md))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -54,15 +61,55 @@ fun DayLogPanel(
             )
         }
         Spacer(Modifier.height(VrddhihSpacing.md))
-        when (dayLog) {
-            DayLogUiState.Loading -> DayLogMessage(stringResource(R.string.day_log_loading))
-            DayLogUiState.Unavailable -> DayLogMessage(stringResource(R.string.day_log_unavailable), VrddhihColors.Danger)
-            is DayLogUiState.Loaded ->
-                if (dayLog.activity.isEmpty) {
-                    DayLogMessage(stringResource(R.string.day_log_empty))
-                } else {
-                    DayActivityCounts(dayLog.activity)
+
+        if (isFuture) {
+            DayLogMessage(stringResource(R.string.day_log_future), VrddhihColors.TextMuted)
+        } else if (dayLogData != null) {
+            if (dayLogData.isEmpty) {
+                DayLogMessage(stringResource(R.string.day_log_empty))
+            } else {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    DayCount(value = dayLogData.completedCount, label = stringResource(R.string.day_log_quests))
+                    DayCount(value = dayLogData.reopenedCount, label = stringResource(R.string.day_log_reopened))
                 }
+
+                if (dayLogData.events.isNotEmpty()) {
+                    Spacer(Modifier.height(VrddhihSpacing.sm))
+                    dayLogData.events.takeLast(5).forEach { event ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = VrddhihSpacing.xxs),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            val isCompleted = event.type == com.vrddhih.app.core.data.local.entity.ActivityType.QUEST_COMPLETED
+                            val tagColor = if (isCompleted) VrddhihColors.Success else VrddhihColors.Warning
+                            val tagText = if (isCompleted) stringResource(R.string.habit_state_done) else stringResource(R.string.day_log_reopened)
+
+                            SystemTag(text = tagText, color = tagColor)
+                            Spacer(Modifier.width(VrddhihSpacing.xs))
+                            Text(
+                                text = event.questTitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = VrddhihColors.TextPrimary,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            when (dayLog) {
+                DayLogUiState.Loading -> DayLogMessage(stringResource(R.string.day_log_loading))
+                DayLogUiState.Unavailable -> DayLogMessage(stringResource(R.string.day_log_unavailable), VrddhihColors.Danger)
+                is DayLogUiState.Loaded ->
+                    if (dayLog.activity.isEmpty) {
+                        DayLogMessage(stringResource(R.string.day_log_empty))
+                    } else {
+                        DayActivityCounts(dayLog.activity)
+                    }
+            }
         }
         Spacer(Modifier.height(VrddhihSpacing.sm))
         Text(

@@ -6,7 +6,10 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.vrddhih.app.core.data.local.VrddhihDatabase
 import com.vrddhih.app.core.data.local.dao.FinanceTotals
+import com.vrddhih.app.core.data.local.entity.HabitCompletionState
 import com.vrddhih.app.core.data.local.entity.HabitEntity
+import com.vrddhih.app.core.data.local.entity.HabitScheduleType
+import com.vrddhih.app.core.data.local.entity.HabitType
 import com.vrddhih.app.core.data.local.entity.QuestCompletionEntity
 import com.vrddhih.app.core.data.local.entity.QuestRecurrence
 import com.vrddhih.app.core.data.local.entity.TaskPriority
@@ -58,9 +61,9 @@ class VrddhihDatabaseTest {
         db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Context>(), VrddhihDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        quests = QuestRepository(db.questDao(), clock)
-        habits = HabitRepository(db.habitDao(), clock)
-        goals = GoalRepository(db.goalDao(), clock)
+        quests = QuestRepository(db, clock)
+        habits = HabitRepository(db, clock)
+        goals = GoalRepository(db, clock)
         finance = FinanceRepository(db.financeDao(), clock)
         progression = ProgressionRepository(db.xpEventDao(), clock)
         dayActivity = DayActivityRepository(db.questDao(), db.habitDao(), db.financeDao())
@@ -151,7 +154,7 @@ class VrddhihDatabaseTest {
 
     @Test
     fun deletingGoal_cascadesMilestonesAndUnlinksQuests() = runTest {
-        val goalId = goals.addGoal(title = "Run a 10K", category = "Health", targetDate = day.plusMonths(3))
+        val goalId = goals.addGoal(title = "Run a 10K", targetDate = day.plusMonths(3))
         val milestoneId = goals.addMilestone(goalId, "Run 5K", position = 0)
         goals.addMilestone(goalId, "Run 8K", position = 1)
         val questId = quests.addQuest(title = "Morning run", startDate = day, goalId = goalId)
@@ -174,18 +177,40 @@ class VrddhihDatabaseTest {
         val weekdaysOnly = HabitEntity.maskOf(
             DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY,
         )
-        val meditate = habits.addHabit(name = "Meditate", startDate = day.minusDays(7))
-        habits.addHabit(name = "Gym", startDate = day.minusDays(7), scheduleDaysMask = weekdaysOnly)
+        val meditateId = habits.createHabit(
+            name = "Meditate",
+            type = HabitType.YES_NO,
+            startDate = day.minusDays(7),
+        )
+        val gymId = habits.createHabit(
+            name = "Gym",
+            type = HabitType.YES_NO,
+            scheduleType = HabitScheduleType.SELECTED_WEEKDAYS,
+            scheduleDaysMask = weekdaysOnly,
+            startDate = day.minusDays(7),
+        )
 
         // 2026-10-25 is a Sunday.
         assertEquals(listOf("Meditate"), habits.observeHabitsScheduledOn(day).first().map { it.name })
         assertEquals(2, habits.observeHabitsScheduledOn(day.plusDays(1)).first().size)
 
-        assertTrue(habits.checkIn(meditate, day))
-        assertFalse(habits.checkIn(meditate, day))
-        assertEquals(1, habits.observeCheckInsOn(day).first().size)
-        assertTrue(habits.undoCheckIn(meditate, day))
-        assertTrue(habits.observeCheckInsOn(day).first().isEmpty())
+        // Gym is not scheduled on Sunday, so completing it returns false
+        assertFalse(habits.completeHabit(gymId, day))
+
+        // Meditate is scheduled daily, so completing it returns true
+        assertTrue(habits.completeHabit(meditateId, day))
+        val progress = habits.observeHabitProgress(meditateId, day).first()
+        assertNotNull(progress)
+        assertEquals(HabitCompletionState.COMPLETED, progress?.completionState)
+
+        // Undo completion sets state to MISSED and clears completedAt
+        assertTrue(habits.undoCompletion(meditateId, day))
+        val undoneProgress = habits.observeHabitProgress(meditateId, day).first()
+        assertEquals(HabitCompletionState.MISSED, undoneProgress?.completionState)
+        assertNull(undoneProgress?.completedAt)
+
+        // Undoing again returns false because it is no longer COMPLETED
+        assertFalse(habits.undoCompletion(meditateId, day))
     }
 
     @Test
@@ -220,14 +245,32 @@ class VrddhihDatabaseTest {
     @Test
     fun dayActivity_countsOnlyRecordsOnTheRequestedDay() = runTest {
         val questId = quests.addQuest(title = "Daily", startDate = day.minusDays(1), recurrence = QuestRecurrence.DAILY)
-        val habitId = habits.addHabit(name = "Stretch", startDate = day.minusDays(1))
+        val habitId = habits.createHabit(name = "Stretch", type = HabitType.YES_NO, startDate = day.minusDays(1))
         quests.completeOccurrence(questId, day, xpAwarded = 10)
         quests.completeOccurrence(questId, day.minusDays(1), xpAwarded = 10)
-        habits.checkIn(habitId, day)
+        habits.completeHabit(habitId, day)
         finance.addTransaction(TransactionType.EXPENSE, amountMinor = 250_00, date = day)
 
         assertEquals(DayActivity(questCompletions = 1, habitCheckIns = 1, transactions = 1), dayActivity.observeDayActivity(day).first())
         assertEquals(DayActivity(questCompletions = 1, habitCheckIns = 0, transactions = 0), dayActivity.observeDayActivity(day.minusDays(1)).first())
         assertTrue(dayActivity.observeDayActivity(day.plusDays(1)).first().isEmpty)
+    }
+
+    @Test
+    fun database_hasCategoriesAndCategoryIdColumn() {
+        val sqlite = db.openHelper.writableDatabase
+        sqlite.query("PRAGMA table_info(`quests`)").use { cursor ->
+            var hasCategoryId = false
+            while (cursor.moveToNext()) {
+                val colName = cursor.getString(cursor.getColumnIndexOrThrow("name"))
+                if (colName == "category_id") hasCategoryId = true
+            }
+            assertTrue(hasCategoryId)
+        }
+        VrddhihDatabase.seedBuiltInCategories(sqlite)
+        sqlite.query("SELECT COUNT(*) FROM `categories`").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(15, cursor.getInt(0))
+        }
     }
 }

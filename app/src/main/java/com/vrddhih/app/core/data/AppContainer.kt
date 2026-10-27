@@ -2,6 +2,7 @@ package com.vrddhih.app.core.data
 
 import android.content.Context
 import com.vrddhih.app.core.data.local.VrddhihDatabase
+import com.vrddhih.app.core.data.repository.CategoryRepository
 import com.vrddhih.app.core.data.repository.DayActivityRepository
 import com.vrddhih.app.core.data.repository.FinanceRepository
 import com.vrddhih.app.core.data.repository.GoalRepository
@@ -20,11 +21,12 @@ class AppContainer(context: Context) {
 
     val database: VrddhihDatabase by lazy { VrddhihDatabase.build(appContext) }
 
-    val questRepository by lazy { QuestRepository(database.questDao(), clock) }
-    val habitRepository by lazy { HabitRepository(database.habitDao(), clock) }
-    val goalRepository by lazy { GoalRepository(database.goalDao(), clock) }
+    val questRepository by lazy { QuestRepository(database, clock) }
+    val habitRepository by lazy { HabitRepository(database, clock) }
+    val goalRepository by lazy { GoalRepository(database, clock) }
     val financeRepository by lazy { FinanceRepository(database.financeDao(), clock) }
     val progressionRepository by lazy { ProgressionRepository(database.xpEventDao(), clock) }
+    val categoryRepository by lazy { CategoryRepository(database) }
     val dayActivityRepository by lazy {
         DayActivityRepository(database.questDao(), database.habitDao(), database.financeDao())
     }

@@ -50,8 +50,23 @@ data class HabitPreview(
     val isDoneToday: Boolean,
 )
 
+data class DashboardHabitItem(
+    val id: Long,
+    val name: String,
+    val isDone: Boolean,
+)
+
 data class GoalPreview(
     val id: String,
+    val title: String,
+    val category: String,
+    val progress: Float,
+) {
+    val percent: Int get() = (progress.coerceIn(0f, 1f) * 100).roundToInt()
+}
+
+data class DashboardGoalItem(
+    val id: Long,
     val title: String,
     val category: String,
     val progress: Float,

@@ -67,4 +67,21 @@ class DateSelectionStateHolderTest {
         holder.select(LocalDate.of(2027, 1, 2))
         assertEquals(java.time.YearMonth.of(2027, 1), holder.state.value.selectedMonth)
     }
+
+    @Test
+    fun shiftWindow_movesForwardByOneWeek() {
+        // Today is 2026-10-25
+        holder.shiftWindow(1)
+        assertEquals(LocalDate.of(2026, 11, 1), holder.state.value.selectedDate)
+        assertEquals(deviceDate, holder.state.value.today)
+        assertFalse(holder.state.value.isTodaySelected)
+    }
+
+    @Test
+    fun shiftWindow_movesBackwardByOneWeekAcrossMonthAndYearBoundaries() {
+        holder.select(LocalDate.of(2027, 1, 3))
+        holder.shiftWindow(-1)
+        assertEquals(LocalDate.of(2026, 12, 27), holder.state.value.selectedDate)
+        assertEquals(deviceDate, holder.state.value.today)
+    }
 }

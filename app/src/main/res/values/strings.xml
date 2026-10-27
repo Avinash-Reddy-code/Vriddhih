@@ -28,18 +28,23 @@
     <string name="dashboard_summary_remaining">Remaining</string>
     <string name="dashboard_summary_xp">XP earned</string>
     <string name="dashboard_quests_title">Today\'s quests</string>
+    <string name="dashboard_quests_title_date">Quests for %1$s</string>
+    <string name="dashboard_quests_empty">No quests scheduled for this day.</string>
     <string name="dashboard_quests_preview_note">Tap a quest to preview completion. Changes are temporary and reset when the app closes.</string>
     <string name="dashboard_quest_xp">+%1$d XP</string>
+    <string name="priority_critical">Critical</string>
     <string name="priority_high">High</string>
     <string name="priority_medium">Medium</string>
     <string name="priority_low">Low</string>
     <string name="dashboard_habits_title">Habit progress</string>
     <string name="dashboard_habits_ratio">%1$d/%2$d</string>
     <string name="dashboard_habits_today">Today</string>
+    <string name="dashboard_habits_empty">No habits scheduled for this day.</string>
     <string name="dashboard_habits_streak_note">Streaks are not calculated yet.</string>
     <string name="habit_state_done">Done</string>
     <string name="habit_state_pending">Not done</string>
     <string name="dashboard_goals_title">Goals</string>
+    <string name="dashboard_goals_empty">No active goals tracked yet.</string>
     <string name="dashboard_goal_percent">%1$d%%</string>
     <string name="dashboard_deadlines_title">Upcoming deadlines</string>
     <string name="deadline_due_today">Due today</string>
@@ -52,6 +57,8 @@
     <string name="dashboard_footer">Vrddhih keeps your data on this device. No account, no cloud, no sync.</string>
 
     <!-- Date selection -->
+    <string name="date_strip_previous_week">Previous week</string>
+    <string name="date_strip_next_week">Next week</string>
     <string name="calendar_open">Open calendar</string>
     <string name="calendar_previous_month">Previous month</string>
     <string name="calendar_next_month">Next month</string>
@@ -75,13 +82,85 @@
     <!-- Day log: real records stored on this device -->
     <string name="day_log_title">Day log</string>
     <string name="day_log_badge">On device</string>
+    <string name="day_log_history_badge">History</string>
     <string name="day_log_loading">Reading local records…</string>
     <string name="day_log_empty">No activity recorded for this day.</string>
+    <string name="day_log_future">Future date — activity logs record completions as they occur.</string>
     <string name="day_log_unavailable">Local records could not be read.</string>
     <string name="day_log_quests">Quests done</string>
     <string name="day_log_habits">Check-ins</string>
     <string name="day_log_transactions">Transactions</string>
+    <string name="day_log_reopened">Reopened</string>
+    <string name="day_log_event_completed">Completed: %1$s</string>
+    <string name="day_log_event_reopened">Reopened: %1$s</string>
     <string name="day_log_note">Quests, habits and finances will log here once those features arrive.</string>
+    <string name="date_strip_today_action">Today</string>
+    <string name="date_strip_timeline_desc">Date timeline</string>
+    <string name="quests_actionable_badge">Actionable</string>
+
+    <!-- Quests feature -->
+    <string name="quests_filter_all">All</string>
+    <string name="quests_filter_today">Today</string>
+    <string name="quests_filter_upcoming">Upcoming</string>
+    <string name="quests_filter_overdue">Overdue</string>
+    <string name="quests_filter_completed">Completed</string>
+    <string name="quests_search_hint">Search quests…</string>
+    <string name="quests_sort_deadline">Deadline</string>
+    <string name="quests_sort_priority">Priority</string>
+    <string name="quests_sort_created">Created</string>
+    <string name="quests_new_action">New Quest</string>
+    <string name="quests_empty_title">No quests found</string>
+    <string name="quests_empty_desc">Create a quest or change the active filter.</string>
+    <string name="quests_overdue_tag">Overdue</string>
+    <string name="quests_recurring_daily">Daily</string>
+    <string name="quests_recurring_weekdays">Weekdays</string>
+    <string name="quests_recurring_weekly">Weekly</string>
+    <string name="quests_recurring_monthly">Monthly</string>
+    <string name="quests_recurring_every_days">Every %1$d days</string>
+    <string name="quest_detail_title">Quest Details</string>
+    <string name="quest_edit_title">Edit Quest</string>
+    <string name="quest_create_title">New Quest</string>
+    <string name="quest_field_title">Title *</string>
+    <string name="quest_field_notes">Description</string>
+    <string name="quest_field_priority">Priority</string>
+    <string name="quest_field_date">Scheduled Date</string>
+    <string name="quest_field_due_time">Due Time</string>
+    <string name="quest_field_deadline">Deadline</string>
+    <string name="quest_field_category">Category</string>
+    <string name="quest_field_recurrence">Recurrence</string>
+    <string name="quest_field_interval">Repeat interval</string>
+    <string name="quest_field_end_date">End Date</string>
+    <string name="quest_recurrence_none">Does not repeat</string>
+    <string name="quest_recurrence_daily">Daily</string>
+    <string name="quest_recurrence_weekdays">Specific weekdays</string>
+    <string name="quest_recurrence_weekly">Weekly</string>
+    <string name="quest_recurrence_monthly">Monthly</string>
+    <string name="quest_scope_title">Apply changes to</string>
+    <string name="quest_scope_occurrence">This occurrence only</string>
+    <string name="quest_scope_future">This and future occurrences</string>
+    <string name="quest_scope_all">All occurrences</string>
+    <string name="quest_delete_title">Delete Quest</string>
+    <string name="quest_delete_message">Are you sure you want to delete this quest?</string>
+    <string name="quest_delete_scope_message">This is a recurring quest. Choose which occurrences to delete:</string>
+    <string name="quest_delete_confirm">Delete</string>
+    <string name="quest_save_confirm">Save</string>
+    <string name="quest_cancel">Cancel</string>
+    <string name="quest_close">Close</string>
+    <string name="quest_action_complete">Complete</string>
+    <string name="quest_action_reopen">Reopen</string>
+    <string name="quest_action_edit">Edit</string>
+    <string name="quest_action_delete">Delete</string>
+    <string name="quest_error_title_required">Title is required</string>
+    <string name="quest_error_title_too_long">Title cannot exceed 120 characters</string>
+    <string name="quest_error_deadline_before_start">Deadline cannot be before scheduled date</string>
+    <string name="quest_error_end_before_start">End date cannot be before start date</string>
+    <string name="quest_error_no_weekdays">Select at least one weekday</string>
+    <string name="quest_error_interval_invalid">Interval must be at least 1</string>
+    <string name="categories_title">Categories</string>
+    <string name="quest_discard_title">Discard quest?</string>
+    <string name="quest_discard_message">You have unsaved changes. Are you sure you want to discard them?</string>
+    <string name="quest_keep_editing">Keep editing</string>
+    <string name="quest_discard">Discard</string>
 
     <!-- Feature placeholders -->
     <string name="placeholder_status_title">Not yet unlocked</string>
@@ -108,6 +187,58 @@
         <item>Completion history and consistency view</item>
     </string-array>
 
+    <!-- Habit Management & Editor -->
+    <string name="habits_new_action">New Habit</string>
+    <string name="habits_edit_title">Edit Habit</string>
+    <string name="habits_create_title">Create Habit</string>
+    <string name="habits_save_action">Save Habit</string>
+    <string name="habits_cancel_action">Cancel</string>
+    <string name="habits_archive_action">Archive</string>
+    <string name="habits_delete_action">Delete</string>
+    <string name="habits_name_label">Habit Name</string>
+    <string name="habits_name_hint">e.g. Daily Meditation, 10K Steps</string>
+    <string name="habits_desc_label">Description (Optional)</string>
+    <string name="habits_desc_hint">Why is this habit important?</string>
+    <string name="habits_type_label">Habit Type</string>
+    <string name="habits_type_yes_no">Yes / No</string>
+    <string name="habits_type_numeric">Counter</string>
+    <string name="habits_type_timer">Timer</string>
+    <string name="habits_type_checklist">Checklist</string>
+    <string name="habits_type_limit">Limit</string>
+    <string name="habits_frequency_label">Frequency</string>
+    <string name="habits_freq_daily">Daily</string>
+    <string name="habits_freq_weekdays">Weekdays</string>
+    <string name="habits_freq_custom_days">Specific Days</string>
+    <string name="habits_freq_interval">Every N Days</string>
+    <string name="habits_freq_interval_hint">Repeat interval in days</string>
+    <string name="habits_category_label">Category</string>
+    <string name="habits_xp_label">XP Reward</string>
+    <string name="habits_numeric_target_label">Daily Target</string>
+    <string name="habits_numeric_unit_label">Unit</string>
+    <string name="habits_numeric_unit_hint">e.g. steps, glasses, pages</string>
+    <string name="habits_numeric_step_label">Step</string>
+    <string name="habits_timer_target_label">Target Duration (Minutes)</string>
+    <string name="habits_checklist_items_label">Checklist Items</string>
+    <string name="habits_checklist_add_item">Add Item</string>
+    <string name="habits_checklist_item_hint">Step title…</string>
+    <string name="habits_limit_target_label">Daily Limit</string>
+    <string name="habits_limit_unit_label">Unit</string>
+    <string name="habits_limit_unit_hint">e.g. cups, hours, treats</string>
+    <string name="habits_status_within_limit">Within limit</string>
+    <string name="habits_status_limit_exceeded">Limit exceeded</string>
+    <string name="habits_status_not_scheduled">Rest Day</string>
+    <string name="habits_timer_quick_5m">+5m</string>
+    <string name="habits_timer_quick_15m">+15m</string>
+    <string name="habits_timer_quick_30m">+30m</string>
+    <string name="habits_timer_start">Start</string>
+    <string name="habits_timer_pause">Pause</string>
+    <string name="habits_timer_reset">Reset</string>
+    <string name="habits_empty_title">No Habits Scheduled</string>
+    <string name="habits_empty_desc">Create your first habit to build your routine.</string>
+    <string name="habits_validation_name_blank">Habit name cannot be blank</string>
+    <string name="habits_delete_confirm_title">Delete Habit</string>
+    <string name="habits_delete_confirm_message">Are you sure you want to delete \"%1$s\"?</string>
+
     <string name="goals_eyebrow">System · Objectives</string>
     <string name="goals_title">Goals</string>
     <string name="goals_description">Long-term objectives broken into milestones. Goals will connect to your quests and habits so daily effort adds up to visible progress.</string>
@@ -117,6 +248,43 @@
         <item>Progress linked to quests and habits</item>
         <item>Categories and target dates</item>
     </string-array>
+
+    <!-- Goals Management (Phase 3) -->
+    <string name="goals_filter_all">All</string>
+    <string name="goals_filter_active">Active</string>
+    <string name="goals_filter_completed">Completed</string>
+    <string name="goals_new_action">New Goal</string>
+    <string name="goal_editor_title_new">New Goal</string>
+    <string name="goal_editor_title_edit">Edit Goal</string>
+    <string name="goal_field_title">Title *</string>
+    <string name="goal_field_description">Description</string>
+    <string name="goal_field_type">Goal Type</string>
+    <string name="goal_type_milestone">Milestones</string>
+    <string name="goal_type_numeric">Numeric Target</string>
+    <string name="goal_type_completion">Single / Count</string>
+    <string name="goal_field_category">Category</string>
+    <string name="goal_field_target_date">Target Date</string>
+    <string name="goal_field_no_date">No target date</string>
+    <string name="goal_field_milestones">Milestones</string>
+    <string name="goal_field_milestone_hint">Add milestone…</string>
+    <string name="goal_field_add_milestone">Add</string>
+    <string name="goal_field_target_value">Target Value</string>
+    <string name="goal_field_current_value">Current Value</string>
+    <string name="goal_field_unit">Unit (e.g. km, books, $)</string>
+    <string name="goal_field_target_count">Target Count</string>
+    <string name="goal_action_save">Save Goal</string>
+    <string name="goal_action_update">Update Goal</string>
+    <string name="goal_action_delete">Delete Goal</string>
+    <string name="goal_delete_confirm_title">Delete Goal</string>
+    <string name="goal_delete_confirm_message">Are you sure you want to delete \"%1$s\"? This cannot be undone.</string>
+    <string name="goal_status_active">Active</string>
+    <string name="goal_status_completed">Completed</string>
+    <string name="goal_status_paused">Paused</string>
+    <string name="goal_status_archived">Archived</string>
+    <string name="goal_validation_title_blank">Goal title cannot be blank</string>
+    <string name="goal_validation_milestone_blank">At least one milestone is required for milestone goals</string>
+    <string name="goal_empty_title">No Goals Found</string>
+    <string name="goal_empty_desc">Create your first goal to begin tracking your long-term progression.</string>
 
     <string name="finance_eyebrow">System · Treasury</string>
     <string name="finance_title">Finance</string>

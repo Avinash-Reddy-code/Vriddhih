@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -125,9 +126,18 @@ private fun LevelEmblem(level: Int, modifier: Modifier = Modifier) {
 // region Daily summary
 
 @Composable
-internal fun DailySummaryPanel(uiState: DashboardUiState, modifier: Modifier = Modifier) {
+internal fun DailySummaryPanel(
+    completedCount: Int,
+    remainingCount: Int,
+    xpEarned: Int,
+    isSample: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
     SystemPanel(modifier = modifier, accent = VrddhihColors.OutlineBright) {
-        SectionHeader(title = stringResource(R.string.dashboard_summary_title), trailing = { MockDataBadge() })
+        SectionHeader(
+            title = stringResource(R.string.dashboard_summary_title),
+            trailing = if (isSample) { { MockDataBadge() } } else null,
+        )
         Spacer(Modifier.height(VrddhihSpacing.lg))
         Row(
             modifier = Modifier
@@ -136,21 +146,21 @@ internal fun DailySummaryPanel(uiState: DashboardUiState, modifier: Modifier = M
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SummaryStat(
-                value = uiState.completedQuestCount.toString(),
+                value = completedCount.toString(),
                 label = stringResource(R.string.dashboard_summary_completed),
                 color = VrddhihColors.Success,
                 modifier = Modifier.weight(1f),
             )
             SummaryDivider()
             SummaryStat(
-                value = uiState.remainingQuestCount.toString(),
+                value = remainingCount.toString(),
                 label = stringResource(R.string.dashboard_summary_remaining),
                 color = VrddhihColors.Warning,
                 modifier = Modifier.weight(1f),
             )
             SummaryDivider()
             SummaryStat(
-                value = stringResource(R.string.dashboard_quest_xp, uiState.previewXpEarned),
+                value = stringResource(R.string.dashboard_quest_xp, xpEarned),
                 label = stringResource(R.string.dashboard_summary_xp),
                 color = VrddhihColors.Ice,
                 modifier = Modifier.weight(1f),
@@ -158,6 +168,16 @@ internal fun DailySummaryPanel(uiState: DashboardUiState, modifier: Modifier = M
         }
     }
 }
+
+@Composable
+internal fun DailySummaryPanel(uiState: DashboardUiState, modifier: Modifier = Modifier) =
+    DailySummaryPanel(
+        completedCount = uiState.completedQuestCount,
+        remainingCount = uiState.remainingQuestCount,
+        xpEarned = uiState.previewXpEarned,
+        isSample = true,
+        modifier = modifier,
+    )
 
 @Composable
 private fun SummaryStat(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
@@ -191,6 +211,93 @@ private fun SummaryDivider() {
 // endregion
 
 // region Today's quests
+
+@Composable
+internal fun RealQuestsPanel(
+    date: java.time.LocalDate,
+    isToday: Boolean,
+    occurrences: List<com.vrddhih.app.core.data.quest.QuestOccurrence>,
+    onToggleQuest: (com.vrddhih.app.core.data.quest.QuestOccurrence) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val formatter = remember { java.time.format.DateTimeFormatter.ofPattern("MMM d", java.util.Locale.getDefault()) }
+    val title = if (isToday) {
+        stringResource(R.string.dashboard_quests_title)
+    } else {
+        stringResource(R.string.dashboard_quests_title_date, formatter.format(date))
+    }
+
+    SystemPanel(modifier = modifier) {
+        SectionHeader(
+            title = title,
+            trailing = {
+                SystemTag(text = stringResource(R.string.quests_actionable_badge), color = VrddhihColors.Electric)
+            },
+        )
+        Spacer(Modifier.height(VrddhihSpacing.sm))
+        if (occurrences.isEmpty()) {
+            Text(
+                text = stringResource(R.string.dashboard_quests_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = VrddhihColors.TextMuted,
+                modifier = Modifier.padding(vertical = VrddhihSpacing.sm),
+            )
+        } else {
+            occurrences.forEachIndexed { index, occurrence ->
+                if (index > 0) HorizontalDivider(color = VrddhihColors.Outline)
+                RealQuestRow(
+                    occurrence = occurrence,
+                    onToggle = { onToggleQuest(occurrence) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RealQuestRow(
+    occurrence: com.vrddhih.app.core.data.quest.QuestOccurrence,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val timeFormatter = remember { java.time.format.DateTimeFormatter.ofPattern("HH:mm", java.util.Locale.getDefault()) }
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .clip(RoundedCornerShape(VrddhihRadii.sm))
+            .toggleable(value = occurrence.isCompleted, role = Role.Checkbox, onValueChange = { onToggle() })
+            .padding(horizontal = VrddhihSpacing.xs, vertical = VrddhihSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        QuestCheck(checked = occurrence.isCompleted)
+        Spacer(Modifier.width(VrddhihSpacing.md))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = occurrence.title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (occurrence.isCompleted) VrddhihColors.TextMuted else VrddhihColors.TextPrimary,
+                textDecoration = if (occurrence.isCompleted) TextDecoration.LineThrough else null,
+            )
+            Spacer(Modifier.height(VrddhihSpacing.xs))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                com.vrddhih.app.features.quests.components.TaskPriorityTag(priority = occurrence.priority)
+                if (occurrence.dueTime != null) {
+                    Spacer(Modifier.width(VrddhihSpacing.sm))
+                    SystemTag(text = timeFormatter.format(occurrence.dueTime), color = VrddhihColors.Ice)
+                }
+                if (occurrence.quest.xpReward > 0) {
+                    Spacer(Modifier.width(VrddhihSpacing.sm))
+                    Text(
+                        text = stringResource(R.string.dashboard_quest_xp, occurrence.quest.xpReward),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = VrddhihColors.Ice,
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 internal fun TodaysQuestsPanel(
@@ -293,6 +400,105 @@ private fun PriorityTag(priority: QuestPriority) {
 // region Habits
 
 @Composable
+internal fun RealHabitProgressPanel(
+    date: java.time.LocalDate,
+    isToday: Boolean,
+    habits: List<DashboardHabitItem>,
+    onToggleHabit: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val completedCount = habits.count { it.isDone }
+    val totalCount = habits.size
+    val progress = if (totalCount > 0) completedCount.toFloat() / totalCount.toFloat() else 0f
+
+    SystemPanel(modifier = modifier, accent = VrddhihColors.Ice) {
+        SectionHeader(
+            title = stringResource(R.string.dashboard_habits_title),
+            trailing = {
+                SystemTag(text = stringResource(R.string.quests_actionable_badge), color = VrddhihColors.Ice)
+            },
+        )
+        Spacer(Modifier.height(VrddhihSpacing.lg))
+        if (habits.isEmpty()) {
+            Text(
+                text = stringResource(R.string.dashboard_habits_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = VrddhihColors.TextMuted,
+                modifier = Modifier.padding(vertical = VrddhihSpacing.sm),
+            )
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                ProgressRing(progress = progress, diameter = 96.dp) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = stringResource(R.string.dashboard_habits_ratio, completedCount, totalCount),
+                            style = VrddhihTextStyles.NumericMedium,
+                            color = VrddhihColors.Frost,
+                        )
+                        Text(
+                            text = (if (isToday) stringResource(R.string.dashboard_habits_today) else date.format(java.time.format.DateTimeFormatter.ofPattern("MMM d"))).uppercase(),
+                            style = VrddhihTextStyles.TagLabel,
+                            color = VrddhihColors.TextMuted,
+                        )
+                    }
+                }
+                Spacer(Modifier.width(VrddhihSpacing.xl))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.xs),
+                ) {
+                    habits.forEach { habit ->
+                        RealHabitLine(
+                            habit = habit,
+                            onToggle = { onToggleHabit(habit.id) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RealHabitLine(
+    habit: DashboardHabitItem,
+    onToggle: () -> Unit,
+) {
+    val state = stringResource(if (habit.isDone) R.string.habit_state_done else R.string.habit_state_pending)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 40.dp)
+            .clip(RoundedCornerShape(VrddhihRadii.sm))
+            .toggleable(
+                value = habit.isDone,
+                role = Role.Checkbox,
+                onValueChange = { onToggle() },
+            )
+            .padding(horizontal = VrddhihSpacing.xs, vertical = VrddhihSpacing.xxs)
+            .semantics(mergeDescendants = true) { stateDescription = state },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = if (habit.isDone) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+            contentDescription = null,
+            tint = if (habit.isDone) VrddhihColors.Success else VrddhihColors.TextMuted,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(Modifier.width(VrddhihSpacing.sm))
+        Text(
+            text = habit.name,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (habit.isDone) VrddhihColors.TextPrimary else VrddhihColors.TextSecondary,
+            textDecoration = if (habit.isDone) TextDecoration.LineThrough else null,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
 internal fun HabitProgressPanel(uiState: DashboardUiState, modifier: Modifier = Modifier) {
     SystemPanel(modifier = modifier, accent = VrddhihColors.Ice) {
         SectionHeader(title = stringResource(R.string.dashboard_habits_title), trailing = { MockDataBadge() })
@@ -356,6 +562,63 @@ private fun HabitLine(habit: HabitPreview) {
 // endregion
 
 // region Goals
+
+@Composable
+internal fun RealGoalsPanel(
+    goals: List<DashboardGoalItem>,
+    modifier: Modifier = Modifier,
+) {
+    SystemPanel(modifier = modifier) {
+        SectionHeader(
+            title = stringResource(R.string.dashboard_goals_title),
+            trailing = {
+                SystemTag(text = "Active", color = VrddhihColors.Electric)
+            },
+        )
+        Spacer(Modifier.height(VrddhihSpacing.md))
+        if (goals.isEmpty()) {
+            Text(
+                text = stringResource(R.string.dashboard_goals_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = VrddhihColors.TextMuted,
+                modifier = Modifier.padding(vertical = VrddhihSpacing.sm),
+            )
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.lg)) {
+                goals.forEach { goal -> RealGoalRow(goal = goal) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RealGoalRow(goal: DashboardGoalItem) {
+    Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = goal.category.uppercase(),
+                    style = VrddhihTextStyles.TagLabel,
+                    color = VrddhihColors.TextMuted,
+                )
+                Spacer(Modifier.height(VrddhihSpacing.xxs))
+                Text(
+                    text = goal.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = VrddhihColors.TextPrimary,
+                )
+            }
+            Spacer(Modifier.width(VrddhihSpacing.sm))
+            Text(
+                text = stringResource(R.string.dashboard_goal_percent, goal.percent),
+                style = VrddhihTextStyles.NumericSmall,
+                color = VrddhihColors.Ice,
+            )
+        }
+        Spacer(Modifier.height(VrddhihSpacing.sm))
+        SystemProgressBar(progress = goal.progress, height = 6.dp)
+    }
+}
 
 @Composable
 internal fun GoalsPanel(goals: List<GoalPreview>, modifier: Modifier = Modifier) {

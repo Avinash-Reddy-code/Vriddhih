@@ -8,6 +8,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,12 +36,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -60,6 +65,8 @@ import com.vrddhih.app.core.theme.VrddhihColors
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
 import com.vrddhih.app.core.time.CalendarMath
+import com.vrddhih.app.core.ui.gesture.swipeDirection
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle as JavaTextStyle
@@ -90,8 +97,9 @@ fun CalendarToggleButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
 
 /**
  * Month calendar in the status-window style. The displayed month is temporary UI state: browsing
- * months never changes the selection. Only tapping a day ([onDateSelected]) or Today ([onTodaySelected])
- * reports a new date; Close ([onDismiss]) leaves the selection untouched.
+ * months never changes the selection. Swiping horizontally or tapping arrow controls changes the displayed
+ * month. Only tapping a day ([onDateSelected]) or Today ([onTodaySelected]) reports a new date;
+ * Close ([onDismiss]) leaves the selection untouched.
  */
 @Composable
 fun VrddhihCalendarDialog(
@@ -102,6 +110,7 @@ fun VrddhihCalendarDialog(
     onDismiss: () -> Unit,
 ) {
     var displayedMonth by rememberSaveable { mutableStateOf(YearMonth.from(selectedDate)) }
+    var totalDrag by remember { mutableFloatStateOf(0f) }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         SystemPanel(
@@ -119,12 +128,35 @@ fun VrddhihCalendarDialog(
             Spacer(Modifier.height(VrddhihSpacing.lg))
             WeekdayHeaderRow()
             Spacer(Modifier.height(VrddhihSpacing.sm))
-            AnimatedContent(
-                targetState = displayedMonth,
-                transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(120)) },
-                label = "calendar-month",
-            ) { month ->
-                MonthGrid(month = month, selectedDate = selectedDate, today = today, onDateSelected = onDateSelected)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pointerInput(displayedMonth) {
+                        detectHorizontalDragGestures(
+                            onDragStart = { totalDrag = 0f },
+                            onDragEnd = {
+                                if (totalDrag < -40.dp.toPx()) {
+                                    displayedMonth = displayedMonth.plusMonths(1)
+                                } else if (totalDrag > 40.dp.toPx()) {
+                                    displayedMonth = displayedMonth.minusMonths(1)
+                                }
+                                totalDrag = 0f
+                            },
+                            onDragCancel = { totalDrag = 0f },
+                            onHorizontalDrag = { _, dragAmount ->
+                                totalDrag += dragAmount
+                            },
+                        )
+                    },
+            ) {
+                AnimatedContent(
+                    targetState = displayedMonth,
+                    transitionSpec = { fadeIn(tween(140)) togetherWith fadeOut(tween(140)) },
+                    label = "calendar-month",
+                ) { month ->
+                    MonthGrid(month = month, selectedDate = selectedDate, today = today, onDateSelected = onDateSelected)
+                }
             }
             Spacer(Modifier.height(VrddhihSpacing.lg))
             Box(
@@ -216,8 +248,14 @@ private fun MonthGrid(
     onDateSelected: (LocalDate) -> Unit,
 ) {
     val labelFormatter = rememberFullDateFormatter()
+    val weeks = CalendarMath.monthGrid(month)
+    val paddedWeeks = if (weeks.size < 6) {
+        weeks + List(6 - weeks.size) { List<LocalDate?>(7) { null } }
+    } else {
+        weeks
+    }
     Column(verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.xxs)) {
-        CalendarMath.monthGrid(month).forEach { week ->
+        paddedWeeks.forEach { week ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 week.forEach { date ->
                     Box(
