@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -88,6 +89,28 @@ fun CalendarToggleButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             Icon(
                 imageVector = Icons.Outlined.CalendarMonth,
                 contentDescription = stringResource(R.string.calendar_open),
+                tint = VrddhihColors.Cyan,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    }
+}
+
+/** Compact statistics icon button used to open the statistics screen from the top bar. */
+@Composable
+fun StatsToggleButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    IconButton(onClick = onClick, modifier = modifier.size(48.dp)) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(CircleShape)
+                .background(VrddhihColors.PanelRaised)
+                .border(1.dp, VrddhihColors.OutlineBright, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Insights,
+                contentDescription = stringResource(R.string.nav_stats),
                 tint = VrddhihColors.Cyan,
                 modifier = Modifier.size(20.dp),
             )

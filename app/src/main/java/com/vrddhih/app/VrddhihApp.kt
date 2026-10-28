@@ -1,9 +1,13 @@
 package com.vrddhih.app
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Scaffold
@@ -28,6 +32,7 @@ import com.vrddhih.app.core.theme.VrddhihBrushes
 import com.vrddhih.app.features.categories.CategoriesRoute
 import com.vrddhih.app.features.quests.QuestEditorScreen
 import com.vrddhih.app.features.quests.QuestsViewModel
+import com.vrddhih.app.features.statistics.StatisticsScreen
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -48,7 +53,10 @@ fun VrddhihApp(
         composable("main") {
             BackHandler(enabled = pagerState.currentPage != 0) {
                 coroutineScope.launch {
-                    pagerState.animateScrollToPage(0)
+                    pagerState.animateScrollToPage(
+                        page = 0,
+                        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                    )
                 }
             }
 
@@ -63,7 +71,10 @@ fun VrddhihApp(
                         isSelected = { it.ordinal == pagerState.currentPage },
                         onNavigate = { destination ->
                             coroutineScope.launch {
-                                pagerState.animateScrollToPage(destination.ordinal)
+                                pagerState.animateScrollToPage(
+                                    page = destination.ordinal,
+                                    animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                )
                             }
                         },
                     )
@@ -73,6 +84,7 @@ fun VrddhihApp(
                     pagerState = pagerState,
                     modifier = Modifier.padding(innerPadding),
                     onNavigateToCategories = { navController.navigate("categories") },
+                    onNavigateToStats = { navController.navigate("statistics") },
                     onNavigateToCreateQuest = { navController.navigate("quest_editor") },
                     onNavigateToEditQuest = { questId, date ->
                         navController.navigate("quest_editor?questId=$questId&occurrenceDate=$date")
@@ -134,6 +146,15 @@ fun VrddhihApp(
 
         composable("categories") {
             CategoriesRoute(
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable("statistics") {
+            StatisticsScreen(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .navigationBarsPadding(),
                 onBack = { navController.popBackStack() },
             )
         }

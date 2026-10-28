@@ -485,4 +485,34 @@ class QuestEngineTest {
         )
         assertFalse(future.isOverdue(today))
     }
+
+    @Test
+    fun questLists_count_matches_build_size_for_all_filters() = runTest {
+        val recurringId = repository.createQuest(
+            QuestDraft(title = "Recurring", scheduledDate = today, recurrence = QuestRecurrence.DAILY)
+        )
+        val onceId = repository.createQuest(
+            QuestDraft(title = "One-off", scheduledDate = today, recurrence = QuestRecurrence.NONE)
+        )
+        val completedId = repository.createQuest(
+            QuestDraft(title = "Completed", scheduledDate = today, recurrence = QuestRecurrence.NONE)
+        )
+        repository.completeOccurrence(completedId, today, xpAwarded = 10)
+
+        val book = QuestBook(
+            quests = listOf(
+                repository.getQuest(recurringId)!!,
+                repository.getQuest(onceId)!!,
+                repository.getQuest(completedId)!!,
+            ),
+            completions = repository.observeQuestBook().first().completions,
+            overrides = emptyList(),
+        )
+
+        for (filter in QuestFilter.entries) {
+            val buildCount = QuestLists.build(book, filter, today).size
+            val fastCount = QuestLists.count(book, filter, today)
+            assertEquals("Mismatch for filter $filter", buildCount, fastCount)
+        }
+    }
 }

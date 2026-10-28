@@ -125,7 +125,7 @@ fun SectionHeader(
     }
 }
 
-@Preview(name = "ScreenHeader Variants", showBackground = true, backgroundColor = 0xFF04060C)
+@Preview(name = "ScreenHeader Variants", showBackground = true, backgroundColor = 0xFF000000)
 @Composable
 private fun ScreenHeaderPreview() {
     VrddhihTheme {

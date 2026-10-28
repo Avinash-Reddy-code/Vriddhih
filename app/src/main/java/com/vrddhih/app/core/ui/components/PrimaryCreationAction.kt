@@ -222,7 +222,7 @@ fun VrddhihPrimaryButton(
 
 // region Previews
 
-@Preview(name = "Anchored Creation Actions", showBackground = true, backgroundColor = 0xFF04060C)
+@Preview(name = "Anchored Creation Actions", showBackground = true, backgroundColor = 0xFF000000)
 @Composable
 private fun AnchoredPrimaryActionPreview() {
     VrddhihTheme {

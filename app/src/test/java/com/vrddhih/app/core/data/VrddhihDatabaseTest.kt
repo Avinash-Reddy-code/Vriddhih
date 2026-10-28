@@ -270,7 +270,7 @@ class VrddhihDatabaseTest {
         VrddhihDatabase.seedBuiltInCategories(sqlite)
         sqlite.query("SELECT COUNT(*) FROM `categories`").use { cursor ->
             assertTrue(cursor.moveToFirst())
-            assertEquals(15, cursor.getInt(0))
+            assertEquals(6, cursor.getInt(0))
         }
     }
 }

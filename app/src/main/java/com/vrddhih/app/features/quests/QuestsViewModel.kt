@@ -95,6 +95,7 @@ class QuestsViewModel(
         val counts: Map<QuestFilter, Int>,
         val config: FilterConfig,
         val book: QuestBook,
+        val categories: List<CategoryEntity>,
     )
 
     private val questBookData = combine(
@@ -104,7 +105,7 @@ class QuestsViewModel(
     ) { book, config, cats ->
         val categoryNames = cats.associate { it.id to it.name }
         val counts = QuestFilter.entries.associateWith { f ->
-            QuestLists.build(book, f, config.today, query = "", categoryNames = categoryNames).size
+            QuestLists.count(book, f, config.today)
         }
         val occurrences = QuestLists.build(
             book,
@@ -114,7 +115,13 @@ class QuestsViewModel(
             sort = config.sort,
             categoryNames = categoryNames,
         )
-        QuestBookData(occurrences = occurrences, counts = counts, config = config, book = book)
+        QuestBookData(
+            occurrences = occurrences,
+            counts = counts,
+            config = config,
+            book = book,
+            categories = cats,
+        )
     }
 
     val uiState: StateFlow<QuestsUiState> = combine(
@@ -122,8 +129,7 @@ class QuestsViewModel(
         editorState,
         detailState,
         deleteState,
-        categoryRepository.observeAll(),
-    ) { bookData, editor, detail, delete, cats ->
+    ) { bookData, editor, detail, delete ->
         val config = bookData.config
         val updatedDetail = detail?.let { d ->
             bookData.book.representative(d.quest, config.today) ?: d
@@ -145,7 +151,7 @@ class QuestsViewModel(
             isDetailOpen = updatedDetail != null,
             selectedOccurrence = updatedDetail,
             deleteTarget = delete,
-            categories = cats,
+            categories = bookData.categories,
         )
     }.stateIn(
         viewModelScope,

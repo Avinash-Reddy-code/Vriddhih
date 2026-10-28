@@ -64,6 +64,7 @@ import com.vrddhih.app.core.theme.VrddhihTheme
 import com.vrddhih.app.core.time.DateSelectionState
 import com.vrddhih.app.core.ui.components.CalendarToggleButton
 import com.vrddhih.app.core.ui.components.DateStrip
+import com.vrddhih.app.core.ui.components.StatsToggleButton
 import com.vrddhih.app.core.ui.components.VrddhihCalendarDialog
 import com.vrddhih.app.core.ui.gesture.consumeHorizontalNestedScroll
 import com.vrddhih.app.features.dashboard.mock.DashboardMockData
@@ -75,6 +76,7 @@ import java.util.Locale
 fun DashboardRoute(
     modifier: Modifier = Modifier,
     onNavigateToCategories: () -> Unit = {},
+    onNavigateToStats: () -> Unit = {},
     viewModel: DashboardViewModel = viewModel(factory = DashboardViewModel.Factory),
 ) {
     val dateState by viewModel.dateState.collectAsStateWithLifecycle()
@@ -90,6 +92,7 @@ fun DashboardRoute(
         onDateSelected = viewModel::selectDate,
         onSelectToday = viewModel::selectToday,
         onNavigateToCategories = onNavigateToCategories,
+        onNavigateToStats = onNavigateToStats,
         modifier = modifier,
     )
 }
@@ -101,6 +104,7 @@ fun DashboardScreen(
     onSelectToday: () -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToCategories: () -> Unit = {},
+    onNavigateToStats: () -> Unit = {},
     uiState: DashboardUiState = DashboardMockData.initialState(),
     dayLog: DayLogUiState = DayLogUiState.Unavailable,
     occurrences: List<com.vrddhih.app.core.data.quest.QuestOccurrence> = emptyList(),
@@ -278,7 +282,13 @@ fun DashboardScreen(
                                 )
                             }
                         }
-                        CalendarToggleButton(onClick = { showCalendar = true })
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.xs),
+                        ) {
+                            StatsToggleButton(onClick = onNavigateToStats)
+                            CalendarToggleButton(onClick = { showCalendar = true })
+                        }
                     }
                 }
                 item(key = "date-strip") {
@@ -322,7 +332,7 @@ fun DashboardScreen(
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFF04060C, widthDp = 390, heightDp = 800)
+@Preview(showBackground = true, backgroundColor = 0xFF000000, widthDp = 390, heightDp = 800)
 @Composable
 private fun DashboardScreenPreview() {
     val today = LocalDate.now()

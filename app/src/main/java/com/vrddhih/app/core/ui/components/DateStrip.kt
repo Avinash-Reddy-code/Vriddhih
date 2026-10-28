@@ -140,7 +140,6 @@ fun DateStrip(
             state = listState,
             modifier = Modifier
                 .fillMaxWidth()
-                .consumeHorizontalNestedScroll()
                 .semantics {
                     contentDescription = "Date timeline"
                 },

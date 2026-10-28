@@ -4,17 +4,17 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 object VrddhihColors {
-    // Ultra-dark background and charcoal surfaces (Habit Tick reference)
-    val Void = Color(0xFF0B0B0D)          // Near-black app background (~#0B0B0D)
-    val Abyss = Color(0xFF101014)         // Deepest surface / navigation bar
-    val Panel = Color(0xFF17171B)         // Primary surface (cards, sheets, panels)
-    val PanelRaised = Color(0xFF202026)   // Secondary surface (elevated cards, inputs, buttons)
-    val PanelHigh = Color(0xFF282832)     // Highlights, active control surfaces
-    val EmblemCore = Color(0xFF191D28)
+    // Ultra-ultra-dark pure black background and near-black surfaces
+    val Void = Color(0xFF000000)          // Pure black app background (#000000)
+    val Abyss = Color(0xFF060606)         // Deepest surface / navigation bar (~#060606)
+    val Panel = Color(0xFF0A0A0A)         // Primary surface (cards, sheets, panels, dialogs) (~#0A0A0A)
+    val PanelRaised = Color(0xFF101010)   // Secondary surface (elevated cards, inputs, buttons) (~#101010)
+    val PanelHigh = Color(0xFF161616)     // Highlights, active control surfaces (~#161616)
+    val EmblemCore = Color(0xFF0B0D12)
 
     // Restrained dark gray borders and dividers
-    val Outline = Color(0xFF26262E)
-    val OutlineBright = Color(0xFF383844)
+    val Outline = Color(0xFF1A1A1E)
+    val OutlineBright = Color(0xFF26262C)
 
     // Ultra-dark Neon Accent Palette
     val NeonGreen = Color(0xFF59F581)     // Habit Tick vibrant neon green

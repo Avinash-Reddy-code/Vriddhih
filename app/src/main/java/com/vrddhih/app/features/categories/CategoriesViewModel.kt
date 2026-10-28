@@ -28,6 +28,7 @@ data class CategoryEditorState(
 
 data class CategoriesUiState(
     val categories: List<CategoryEntity> = emptyList(),
+    val entryCounts: Map<String, Int> = emptyMap(),
     val editor: CategoryEditorState = CategoryEditorState(),
     val deleteTarget: CategoryEntity? = null,
     val affectedQuestCount: Int = 0,
@@ -43,12 +44,14 @@ class CategoriesViewModel(
 
     val uiState: StateFlow<CategoriesUiState> = combine(
         categoryRepository.observeAll(),
+        categoryRepository.observeEntryCounts(),
         editorState,
         deleteState,
         affectedCountState,
-    ) { categories, editor, deleteTarget, count ->
+    ) { categories, entryCounts, editor, deleteTarget, count ->
         CategoriesUiState(
             categories = categories,
+            entryCounts = entryCounts,
             editor = editor,
             deleteTarget = deleteTarget,
             affectedQuestCount = count,

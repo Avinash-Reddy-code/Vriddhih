@@ -86,13 +86,9 @@ abstract class VrddhihDatabase : RoomDatabase() {
         }
 
         fun seedBuiltInCategories(db: SupportSQLiteDatabase) {
-            // Safely remap any quests referencing legacy built-in category IDs
+            // Safely remap any quests referencing legacy built-in category IDs from early versions
             db.execSQL("UPDATE `quests` SET `category_id` = 'builtin_body' WHERE `category_id` = 'builtin_personal'")
-            db.execSQL("UPDATE `quests` SET `category_id` = 'builtin_fitness' WHERE `category_id` = 'builtin_health'")
             db.execSQL("UPDATE `quests` SET `category_id` = 'builtin_mind' WHERE `category_id` = 'builtin_habits'")
-            db.execSQL("UPDATE `quests` SET `category_id` = 'builtin_money' WHERE `category_id` = 'builtin_finance'")
-            db.execSQL("UPDATE `quests` SET `category_id` = 'builtin_study' WHERE `category_id` = 'builtin_reading'")
-            db.execSQL("UPDATE `quests` SET `category_id` = 'builtin_errands' WHERE `category_id` = 'builtin_appointments'")
 
             BuiltInCategories.ALL.forEach { cat ->
                 db.execSQL(
@@ -103,6 +99,20 @@ abstract class VrddhihDatabase : RoomDatabase() {
             }
 
             val currentIds = BuiltInCategories.ALL.joinToString("','") { it.id }
+            // Preserve obsolete built-ins that have user data by converting them to custom categories
+            db.execSQL(
+                """
+                UPDATE `categories` SET `is_built_in` = 0 
+                WHERE `is_built_in` = 1 
+                  AND `id` NOT IN ('$currentIds') 
+                  AND (
+                    `id` IN (SELECT DISTINCT `category_id` FROM `quests` WHERE `category_id` IS NOT NULL)
+                    OR `id` IN (SELECT DISTINCT `category_id` FROM `habits` WHERE `category_id` IS NOT NULL)
+                    OR `id` IN (SELECT DISTINCT `category_id` FROM `goals` WHERE `category_id` IS NOT NULL)
+                  )
+                """.trimIndent(),
+            )
+            // Safely delete unreferenced obsolete built-in categories
             db.execSQL("DELETE FROM `categories` WHERE `is_built_in` = 1 AND `id` NOT IN ('$currentIds')")
         }
 

@@ -10,7 +10,10 @@ import com.vrddhih.app.R
 import com.vrddhih.app.core.ui.components.FeaturePlaceholder
 
 @Composable
-fun StatisticsScreen(modifier: Modifier = Modifier) {
+fun StatisticsScreen(
+    modifier: Modifier = Modifier,
+    onBack: (() -> Unit)? = null,
+) {
     FeaturePlaceholder(
         eyebrow = stringResource(R.string.stats_eyebrow),
         title = stringResource(R.string.stats_title),
@@ -19,5 +22,6 @@ fun StatisticsScreen(modifier: Modifier = Modifier) {
         phaseLabel = stringResource(R.string.stats_phase),
         plannedCapabilities = stringArrayResource(R.array.stats_capabilities).toList(),
         modifier = modifier,
+        onBack = onBack,
     )
 }

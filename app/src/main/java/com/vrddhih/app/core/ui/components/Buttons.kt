@@ -435,7 +435,7 @@ fun VrddhihStepperButton(
 
 // region Previews
 
-@Preview(name = "Shared Buttons Showcase", showBackground = true, backgroundColor = 0xFF04060C)
+@Preview(name = "Shared Buttons Showcase", showBackground = true, backgroundColor = 0xFF000000)
 @Composable
 private fun ButtonsShowcasePreview() {
     var stepperValue by remember { mutableLongStateOf(5L) }

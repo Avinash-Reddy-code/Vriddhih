@@ -428,7 +428,7 @@ fun VrddhihDateField(
 
 // region Previews
 
-@Preview(name = "Form Controls Showcase", showBackground = true, backgroundColor = 0xFF04060C)
+@Preview(name = "Form Controls Showcase", showBackground = true, backgroundColor = 0xFF000000)
 @Composable
 private fun FormControlsShowcasePreview() {
     VrddhihTheme {

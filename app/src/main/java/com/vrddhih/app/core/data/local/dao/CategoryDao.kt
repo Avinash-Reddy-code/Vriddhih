@@ -40,4 +40,40 @@ interface CategoryDao {
     /** Reassigns all quests in the given category to [targetCategoryId]. Used before deletion. */
     @Query("UPDATE quests SET category_id = :targetCategoryId WHERE category_id = :fromId")
     suspend fun reassignQuests(fromId: String, targetCategoryId: String)
+
+    @Query(
+        """
+        SELECT 
+            c.id AS categoryId,
+            (
+                (SELECT COUNT(*) FROM quests q WHERE q.category_id = c.id) +
+                (SELECT COUNT(*) FROM habits h WHERE h.category_id = c.id) +
+                (SELECT COUNT(*) FROM goals g WHERE g.category_id = c.id)
+            ) AS count
+        FROM categories c
+        """
+    )
+    fun observeEntryCounts(): Flow<List<CategoryEntryCount>>
+
+    @Query(
+        """
+        UPDATE categories SET is_built_in = 0 
+        WHERE is_built_in = 1 
+          AND id NOT IN (:currentIds) 
+          AND (
+            id IN (SELECT DISTINCT category_id FROM quests WHERE category_id IS NOT NULL)
+            OR id IN (SELECT DISTINCT category_id FROM habits WHERE category_id IS NOT NULL)
+            OR id IN (SELECT DISTINCT category_id FROM goals WHERE category_id IS NOT NULL)
+          )
+        """
+    )
+    suspend fun preserveReferencedObsoleteBuiltIns(currentIds: List<String>)
+
+    @Query("DELETE FROM categories WHERE is_built_in = 1 AND id NOT IN (:currentIds)")
+    suspend fun deleteUnreferencedObsoleteBuiltIns(currentIds: List<String>)
 }
+
+data class CategoryEntryCount(
+    val categoryId: String,
+    val count: Int,
+)

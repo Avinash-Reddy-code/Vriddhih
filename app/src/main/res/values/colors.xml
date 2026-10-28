@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Mirrors VrddhihColors.Void so the window background matches the Compose UI on launch. -->
-    <color name="vrddhih_void">#FF04060C</color>
+    <color name="vrddhih_void">#FF000000</color>
 </resources>

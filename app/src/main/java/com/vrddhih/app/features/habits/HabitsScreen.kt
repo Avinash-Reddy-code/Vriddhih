@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -49,6 +50,7 @@ import com.vrddhih.app.features.habits.components.HabitItemCard
 @Composable
 fun HabitsScreen(
     modifier: Modifier = Modifier,
+    showHeader: Boolean = true,
     viewModel: HabitsViewModel = viewModel(factory = HabitsViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -73,28 +75,39 @@ fun HabitsScreen(
                 contentPadding = PaddingValues(
                     start = VrddhihSpacing.lg,
                     end = VrddhihSpacing.lg,
-                    top = VrddhihSpacing.xl,
+                    top = if (showHeader) VrddhihSpacing.xl else VrddhihSpacing.xs,
                     bottom = 96.dp,
                 ),
                 verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.lg),
             ) {
                 // Header
-                item(key = "header") {
-                    ScreenHeader(
-                        eyebrow = stringResource(R.string.habits_eyebrow),
-                        title = stringResource(R.string.habits_title),
-                        subtitle = stringResource(R.string.habits_description),
-                        action = { CalendarToggleButton(onClick = { showCalendar = true }) },
-                    )
+                if (showHeader) {
+                    item(key = "header") {
+                        ScreenHeader(
+                            eyebrow = stringResource(R.string.habits_eyebrow),
+                            title = stringResource(R.string.habits_title),
+                            subtitle = stringResource(R.string.habits_description),
+                            action = { CalendarToggleButton(onClick = { showCalendar = true }) },
+                        )
+                    }
                 }
 
                 // Habit Count Bar
                 item(key = "action-bar") {
-                    Text(
-                        text = "${uiState.habitItems.size} HABITS",
-                        style = VrddhihTextStyles.SystemLabel,
-                        color = VrddhihColors.TextMuted,
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "${uiState.habitItems.size} HABITS",
+                            style = VrddhihTextStyles.SystemLabel,
+                            color = VrddhihColors.TextMuted,
+                        )
+                        if (!showHeader) {
+                            CalendarToggleButton(onClick = { showCalendar = true })
+                        }
+                    }
                 }
 
                 // Loading Spinner or Habit Items

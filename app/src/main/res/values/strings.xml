@@ -3,14 +3,22 @@
 
     <!-- Navigation -->
     <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_activities">Activities</string>
     <string name="nav_quests">Quests</string>
     <string name="nav_habits">Habits</string>
     <string name="nav_goals">Goals</string>
     <string name="nav_finance">Finance</string>
     <string name="nav_stats">Stats</string>
 
+    <!-- Activities -->
+    <string name="activities_title">Activities</string>
+    <string name="activities_eyebrow">System · Directives &amp; Routines</string>
+    <string name="activities_tab_tasks">Tasks</string>
+    <string name="activities_tab_habits">Habits</string>
+
     <!-- Shared -->
     <string name="mock_data_badge">Sample</string>
+    <string name="action_back">Navigate back</string>
     <string name="action_loading">Loading…</string>
     <string name="stepper_decrease">Decrease</string>
     <string name="stepper_increase">Increase</string>
@@ -166,6 +174,19 @@
     <string name="quest_error_interval_invalid">Interval must be at least 1</string>
     <string name="categories_title">Categories</string>
     <string name="categories_new_action">New Category</string>
+    <string name="categories_custom_heading">Custom categories</string>
+    <string name="categories_default_heading">Default categories</string>
+    <string name="categories_custom_empty">No custom categories yet. Tap New Category below to create one.</string>
+    <string name="categories_edit_title">Edit Category</string>
+    <string name="categories_delete_confirm_title">Delete category?</string>
+    <string name="categories_delete_confirm_message">\"%1$s\" will be deleted. Any quests in this category will be preserved.</string>
+    <plurals name="category_entry_count">
+        <item quantity="one">%d entry</item>
+        <item quantity="other">%d entries</item>
+    </plurals>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
     <string name="quest_discard_title">Discard quest?</string>
     <string name="quest_discard_message">You have unsaved changes. Are you sure you want to discard them?</string>
     <string name="quest_keep_editing">Keep editing</string>

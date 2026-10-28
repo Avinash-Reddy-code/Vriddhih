@@ -6,12 +6,13 @@ import com.vrddhih.app.core.data.local.VrddhihDatabase
 import com.vrddhih.app.core.data.local.entity.CATEGORY_OTHER_ID
 import com.vrddhih.app.core.data.local.entity.CategoryEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 /**
  * Manages task categories. Built-in categories are seeded idempotently via [seedBuiltIns].
  *
  * Deletion policy: before removing a custom category, all quests in that category are transactionally
- * reassigned to the "Other" built-in. This keeps every quest valid without deleting any history.
+ * reassigned to an existing default built-in. This keeps every quest valid without deleting any history.
  */
 class CategoryRepository(private val db: VrddhihDatabase) {
 
@@ -19,29 +20,34 @@ class CategoryRepository(private val db: VrddhihDatabase) {
 
     fun observeAll(): Flow<List<CategoryEntity>> = dao.observeAll()
 
+    fun observeEntryCounts(): Flow<Map<String, Int>> = dao.observeEntryCounts().map { list ->
+        list.associate { it.categoryId to it.count }
+    }
+
     suspend fun getAll(): List<CategoryEntity> = dao.getAll()
 
     suspend fun getById(id: String): CategoryEntity? = dao.getById(id)
 
     /**
      * Seeds built-in categories idempotently. Reconciles legacy built-in category IDs from earlier builds,
-     * reassigns any existing quests referencing them, upserts the current 15 categories, and cleans up obsolete built-ins.
+     * reassigns any existing quests referencing them, upserts the 6 default categories,
+     * preserves obsolete built-ins that have user records as custom categories, and cleans up unreferenced ones.
      */
     suspend fun seedBuiltIns() {
         db.withTransaction {
             val legacyRemappings = mapOf(
                 "builtin_personal" to "builtin_body",
-                "builtin_health" to "builtin_fitness",
                 "builtin_habits" to "builtin_mind",
-                "builtin_finance" to "builtin_money",
-                "builtin_reading" to "builtin_study",
-                "builtin_appointments" to "builtin_errands",
             )
             legacyRemappings.forEach { (oldId, newId) ->
                 dao.reassignQuests(fromId = oldId, targetCategoryId = newId)
                 dao.deleteBuiltIn(oldId)
             }
             BuiltInCategories.ALL.forEach { dao.upsert(it) }
+
+            val currentIds = BuiltInCategories.ALL.map { it.id }
+            dao.preserveReferencedObsoleteBuiltIns(currentIds)
+            dao.deleteUnreferencedObsoleteBuiltIns(currentIds)
         }
     }
 
@@ -89,8 +95,9 @@ class CategoryRepository(private val db: VrddhihDatabase) {
      */
     suspend fun deleteCustom(category: CategoryEntity): Boolean {
         if (category.isBuiltIn) return false
+        val fallbackId = dao.getAll().firstOrNull { it.isBuiltIn }?.id ?: BuiltInCategories.ALL.first().id
         db.withTransaction {
-            dao.reassignQuests(fromId = category.id, targetCategoryId = CATEGORY_OTHER_ID)
+            dao.reassignQuests(fromId = category.id, targetCategoryId = fallbackId)
             dao.delete(category)
         }
         return true

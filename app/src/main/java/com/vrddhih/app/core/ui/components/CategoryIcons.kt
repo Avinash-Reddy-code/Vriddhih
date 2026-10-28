@@ -154,6 +154,7 @@ object CategoryIcons {
         "errands" to "shopping_cart",
         "other" to "more_horiz",
         "coding" to "code",
+        "health" to "favorite",
     )
 
     fun byKey(key: String): ImageVector {

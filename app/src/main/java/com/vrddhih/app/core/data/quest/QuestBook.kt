@@ -84,6 +84,18 @@ object QuestLists {
         return matching.sortedWith(comparatorFor(sort))
     }
 
+    fun count(book: QuestBook, filter: QuestFilter, today: LocalDate): Int = when (filter) {
+        QuestFilter.ALL -> book.quests.count { book.representative(it, today) != null }
+        QuestFilter.TODAY -> occurrencesOn(today, book.quests, book.completions, book.overrides).size
+        QuestFilter.UPCOMING -> book.quests.count { quest ->
+            book.firstOccurrence(quest, today.plusDays(1)) { !it.isCompleted } != null
+        }
+        QuestFilter.OVERDUE -> book.quests.count { quest ->
+            !quest.isRecurring && book.representative(quest, today)?.isOverdue(today) == true
+        }
+        QuestFilter.COMPLETED -> book.completedOccurrences().size
+    }
+
     fun comparatorFor(sort: QuestSort): Comparator<QuestOccurrence> = when (sort) {
         QuestSort.DEADLINE -> compareBy<QuestOccurrence> { it.effectiveDeadline ?: it.date }
             .thenBy { it.priority.ordinal }

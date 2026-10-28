@@ -74,6 +74,7 @@ import java.time.LocalDate
 @Composable
 fun QuestsRoute(
     modifier: Modifier = Modifier,
+    showHeader: Boolean = true,
     onNavigateToCategories: () -> Unit = {},
     onNavigateToCreateQuest: () -> Unit = {},
     onNavigateToEditQuest: (Long, LocalDate) -> Unit = { _, _ -> },
@@ -88,6 +89,7 @@ fun QuestsRoute(
 
     QuestsScreen(
         uiState = uiState,
+        showHeader = showHeader,
         onFilterChange = viewModel::setFilter,
         onSortChange = viewModel::setSort,
         onToggleCompletion = viewModel::toggleCompletion,
@@ -128,6 +130,7 @@ fun QuestsScreen(
     onCloseDetail: () -> Unit,
     onOpenEdit: (QuestOccurrence) -> Unit,
     modifier: Modifier = Modifier,
+    showHeader: Boolean = true,
     onNavigateToCategories: () -> Unit = {},
     onDraftChange: (QuestDraft) -> Unit = {},
     onScopeChange: (QuestScope) -> Unit = {},
@@ -147,17 +150,19 @@ fun QuestsScreen(
             contentPadding = PaddingValues(
                 start = VrddhihSpacing.lg,
                 end = VrddhihSpacing.lg,
-                top = VrddhihSpacing.xl,
+                top = if (showHeader) VrddhihSpacing.xl else VrddhihSpacing.xs,
                 bottom = 96.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.md),
         ) {
-            item(key = "header") {
-                ScreenHeader(
-                    eyebrow = stringResource(R.string.quests_eyebrow),
-                    title = stringResource(R.string.quests_title),
-                    subtitle = stringResource(R.string.quests_description),
-                )
+            if (showHeader) {
+                item(key = "header") {
+                    ScreenHeader(
+                        eyebrow = stringResource(R.string.quests_eyebrow),
+                        title = stringResource(R.string.quests_title),
+                        subtitle = stringResource(R.string.quests_description),
+                    )
+                }
             }
 
             item(key = "filter-chips") {
@@ -168,7 +173,6 @@ fun QuestsScreen(
                     Row(
                         modifier = Modifier
                             .weight(1f)
-                            .consumeHorizontalNestedScroll()
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.xs),
                     ) {
@@ -327,7 +331,7 @@ fun QuestsScreen(
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFF04060C)
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
 @Composable
 private fun QuestsScreenPreview() {
     VrddhihTheme {

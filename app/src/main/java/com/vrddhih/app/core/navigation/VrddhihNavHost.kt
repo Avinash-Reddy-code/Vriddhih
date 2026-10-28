@@ -1,7 +1,10 @@
 package com.vrddhih.app.core.navigation
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -11,13 +14,11 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.vrddhih.app.features.activities.ActivitiesRoute
 import com.vrddhih.app.features.dashboard.DashboardRoute
 import com.vrddhih.app.features.finance.FinanceScreen
 import com.vrddhih.app.features.goals.GoalsRoute
-import com.vrddhih.app.features.habits.HabitsScreen
-import com.vrddhih.app.features.quests.QuestsRoute
 import com.vrddhih.app.features.quests.QuestsViewModel
-import com.vrddhih.app.features.statistics.StatisticsScreen
 import java.time.LocalDate
 
 @Composable
@@ -25,6 +26,7 @@ fun VrddhihNavHost(
     pagerState: PagerState,
     modifier: Modifier = Modifier,
     onNavigateToCategories: () -> Unit = {},
+    onNavigateToStats: () -> Unit = {},
     onNavigateToCreateQuest: () -> Unit = {},
     onNavigateToEditQuest: (Long, LocalDate) -> Unit = { _, _ -> },
     questsViewModel: QuestsViewModel = viewModel(factory = QuestsViewModel.Factory),
@@ -33,21 +35,29 @@ fun VrddhihNavHost(
         state = pagerState,
         modifier = modifier.fillMaxSize(),
         key = { page -> TopLevelDestination.entries[page].route },
+        beyondViewportPageCount = 1,
+        flingBehavior = PagerDefaults.flingBehavior(
+            state = pagerState,
+            snapAnimationSpec = spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = 850f,
+            ),
+        ),
     ) { page ->
         when (TopLevelDestination.entries[page]) {
             TopLevelDestination.DASHBOARD -> DashboardRoute(
                 onNavigateToCategories = onNavigateToCategories,
+                onNavigateToStats = onNavigateToStats,
             )
-            TopLevelDestination.QUESTS -> QuestsRoute(
+            TopLevelDestination.ACTIVITIES -> ActivitiesRoute(
+                parentPagerState = pagerState,
                 onNavigateToCategories = onNavigateToCategories,
                 onNavigateToCreateQuest = onNavigateToCreateQuest,
                 onNavigateToEditQuest = onNavigateToEditQuest,
-                viewModel = questsViewModel,
+                questsViewModel = questsViewModel,
             )
-            TopLevelDestination.HABITS -> HabitsScreen()
             TopLevelDestination.GOALS -> GoalsRoute()
             TopLevelDestination.FINANCE -> FinanceScreen()
-            TopLevelDestination.STATS -> StatisticsScreen()
         }
     }
 }
@@ -62,6 +72,7 @@ fun VrddhihNavHost(
         pagerState = pagerState,
         modifier = modifier,
         onNavigateToCategories = { navController.navigate("categories") },
+        onNavigateToStats = { navController.navigate("statistics") },
     )
 }
 

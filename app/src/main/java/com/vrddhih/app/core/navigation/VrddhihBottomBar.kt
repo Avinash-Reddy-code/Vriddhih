@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -49,7 +50,7 @@ fun VrddhihBottomBar(
                     icon = {
                         Box(
                             modifier = if (selected) {
-                                Modifier.neonAmbientGlow(VrddhihColors.Electric, radius = 8.dp, alpha = 0.32f)
+                                Modifier.neonAmbientGlow(VrddhihColors.Electric, radius = 8.dp, alpha = 0.35f)
                             } else {
                                 Modifier
                             },
@@ -57,17 +58,10 @@ fun VrddhihBottomBar(
                         ) {
                             Icon(
                                 imageVector = if (selected) destination.selectedIcon else destination.unselectedIcon,
-                                contentDescription = null,
+                                contentDescription = stringResource(destination.labelRes),
+                                modifier = Modifier.size(24.dp),
                             )
                         }
-                    },
-                    label = {
-                        Text(
-                            text = stringResource(destination.labelRes),
-                            style = MaterialTheme.typography.labelSmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
                     },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = VrddhihColors.Electric,

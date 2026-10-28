@@ -3,39 +3,34 @@ package com.vrddhih.app.features.categories
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,11 +45,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -67,11 +63,13 @@ import com.vrddhih.app.core.theme.VrddhihDimens
 import com.vrddhih.app.core.theme.VrddhihRadii
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
+import com.vrddhih.app.core.ui.components.AnchoredPrimaryAction
 import com.vrddhih.app.core.ui.components.CategoryColors
 import com.vrddhih.app.core.ui.components.CategoryIcons
-import com.vrddhih.app.core.ui.components.CuteCategoryBadge
 import com.vrddhih.app.core.ui.components.SystemPanel
+import com.vrddhih.app.core.ui.components.VrddhihPrimaryButton
 import com.vrddhih.app.core.ui.components.neonAmbientGlow
+import com.vrddhih.app.core.ui.gesture.consumeHorizontalNestedScroll
 
 @Composable
 fun CategoriesRoute(
@@ -95,7 +93,7 @@ fun CategoriesRoute(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CategoriesScreen(
     uiState: CategoriesUiState,
@@ -118,104 +116,142 @@ fun CategoriesScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding(),
+            .background(VrddhihColors.Void),
         contentAlignment = Alignment.TopCenter,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = VrddhihSpacing.lg, vertical = VrddhihSpacing.md),
+            modifier = Modifier.fillMaxSize(),
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+            // Header: Black/near-black background, back arrow, title, subtle divider, status bar padding
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(VrddhihColors.Void)
+                    .statusBarsPadding(),
             ) {
-                IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                        contentDescription = "Back",
-                        tint = VrddhihColors.TextPrimary,
-                    )
-                }
-                Spacer(Modifier.width(VrddhihSpacing.xs))
-                Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(horizontal = VrddhihSpacing.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = VrddhihColors.TextPrimary,
+                        )
+                    }
+                    Spacer(Modifier.width(VrddhihSpacing.xs))
                     Text(
-                        text = "System · Categories",
-                        style = VrddhihTextStyles.SystemLabel,
-                        color = VrddhihColors.Ice,
-                    )
-                    Text(
-                        text = "Categories",
-                        style = MaterialTheme.typography.headlineMedium,
+                        text = stringResource(R.string.categories_title),
+                        style = MaterialTheme.typography.titleLarge,
                         color = VrddhihColors.TextPrimary,
                         fontWeight = FontWeight.Bold,
                     )
                 }
+                HorizontalDivider(
+                    color = VrddhihColors.Outline,
+                    thickness = 1.dp,
+                )
             }
 
-            Spacer(Modifier.height(VrddhihSpacing.lg))
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm),
+            // Scrollable Content
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(top = VrddhihSpacing.lg, bottom = 96.dp),
             ) {
-                if (builtIn.isNotEmpty()) {
-                    item {
-                        Text(
-                            text = "Built-in",
-                            style = VrddhihTextStyles.SystemLabel,
-                            color = VrddhihColors.TextMuted,
-                        )
-                        Spacer(Modifier.height(VrddhihSpacing.xs))
-                    }
-                    items(builtIn, key = { it.id }) { category ->
-                        CategoryRow(
-                            category = category,
-                            onEdit = null,
-                            onDelete = null,
-                        )
-                    }
-                }
+                // 1. Custom categories section
+                Text(
+                    text = stringResource(R.string.categories_custom_heading),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = VrddhihColors.TextPrimary,
+                    modifier = Modifier.padding(horizontal = VrddhihSpacing.lg),
+                )
+
+                Spacer(Modifier.height(VrddhihSpacing.md))
 
                 if (custom.isNotEmpty()) {
-                    item {
-                        Spacer(Modifier.height(VrddhihSpacing.md))
-                        Text(
-                            text = "Custom",
-                            style = VrddhihTextStyles.SystemLabel,
-                            color = VrddhihColors.TextMuted,
-                        )
-                        Spacer(Modifier.height(VrddhihSpacing.xs))
+                    FlowRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = VrddhihSpacing.lg),
+                        horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.md),
+                        verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.md),
+                    ) {
+                        custom.forEach { category ->
+                            val count = uiState.entryCounts[category.id] ?: 0
+                            CategoryItemCard(
+                                category = category,
+                                entryCount = count,
+                                onClick = { onOpenEdit(category) },
+                            )
+                        }
                     }
-                    items(custom, key = { it.id }) { category ->
-                        CategoryRow(
-                            category = category,
-                            onEdit = { onOpenEdit(category) },
-                            onDelete = { onRequestDelete(category) },
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = VrddhihSpacing.lg)
+                            .clip(RoundedCornerShape(VrddhihRadii.md))
+                            .background(VrddhihColors.Panel)
+                            .border(1.dp, VrddhihColors.Outline, RoundedCornerShape(VrddhihRadii.md))
+                            .padding(horizontal = VrddhihSpacing.lg, vertical = VrddhihSpacing.md),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.categories_custom_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = VrddhihColors.TextMuted,
                         )
                     }
                 }
 
-                if (custom.isEmpty()) {
-                    item {
-                        Spacer(Modifier.height(VrddhihSpacing.md))
-                        Text(
-                            text = "No custom categories yet. Tap New Category to create one.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = VrddhihColors.TextMuted,
+                Spacer(Modifier.height(VrddhihSpacing.xl))
+
+                // 2. Default categories section (horizontally scrollable row)
+                Text(
+                    text = stringResource(R.string.categories_default_heading),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = VrddhihColors.TextPrimary,
+                    modifier = Modifier.padding(horizontal = VrddhihSpacing.lg),
+                )
+
+                Spacer(Modifier.height(VrddhihSpacing.md))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .consumeHorizontalNestedScroll()
+                        .padding(horizontal = VrddhihSpacing.lg),
+                    horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.md),
+                ) {
+                    builtIn.forEach { category ->
+                        val count = uiState.entryCounts[category.id] ?: 0
+                        CategoryItemCard(
+                            category = category,
+                            entryCount = count,
+                            onClick = {},
                         )
                     }
                 }
             }
         }
 
-        com.vrddhih.app.core.ui.components.AnchoredPrimaryAction(
-            text = stringResource(R.string.categories_new_action),
+        // Prominent NEW CATEGORY action button pinned near the bottom
+        AnchoredPrimaryAction(
+            text = stringResource(R.string.categories_new_action).uppercase(),
             onClick = onOpenCreate,
-            accent = VrddhihColors.Electric,
+            accent = VrddhihColors.NeonGreen,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
@@ -229,6 +265,7 @@ fun CategoriesScreen(
             onSetColor = onSetColor,
             onDismiss = onCloseEditor,
             onSave = onSaveEditor,
+            onDelete = onRequestDelete,
         )
     }
 
@@ -236,10 +273,15 @@ fun CategoriesScreen(
     uiState.deleteTarget?.let { target ->
         AlertDialog(
             onDismissRequest = onDismissDelete,
-            title = { Text("Delete category?", color = VrddhihColors.TextPrimary) },
+            title = {
+                Text(
+                    text = stringResource(R.string.categories_delete_confirm_title),
+                    color = VrddhihColors.TextPrimary,
+                )
+            },
             text = {
                 Text(
-                    text = "\"${target.name}\" will be deleted. Any quests in this category will be moved to Other.",
+                    text = stringResource(R.string.categories_delete_confirm_message, target.name),
                     color = VrddhihColors.TextSecondary,
                 )
             },
@@ -248,12 +290,12 @@ fun CategoriesScreen(
                     onClick = onConfirmDelete,
                     colors = ButtonDefaults.buttonColors(containerColor = VrddhihColors.Danger),
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.action_delete), color = Color.White)
                 }
             },
             dismissButton = {
                 TextButton(onClick = onDismissDelete) {
-                    Text("Cancel", color = VrddhihColors.TextSecondary)
+                    Text(stringResource(R.string.action_cancel), color = VrddhihColors.TextSecondary)
                 }
             },
             containerColor = VrddhihColors.Panel,
@@ -262,59 +304,80 @@ fun CategoriesScreen(
     }
 }
 
+/**
+ * HabitNow-inspired category item:
+ * 1. Large rounded-square colored icon container with restrained ambient glow
+ * 2. Centered vector icon
+ * 3. Category name beneath
+ * 4. Associated entry count beneath
+ */
 @Composable
-private fun CategoryRow(
+private fun CategoryItemCard(
     category: CategoryEntity,
-    onEdit: (() -> Unit)?,
-    onDelete: (() -> Unit)?,
+    entryCount: Int,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val iconColor = Color(category.colorArgb)
+    val countText = pluralStringResource(
+        R.plurals.category_entry_count,
+        entryCount,
+        entryCount,
+    )
+    val accentColor = Color(category.colorArgb)
     val iconVector = CategoryIcons.byKey(category.iconKey)
 
-    Row(
+    Column(
         modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(VrddhihRadii.md))
-            .background(VrddhihColors.Panel)
-            .border(VrddhihDimens.BorderWidth, VrddhihColors.Outline, RoundedCornerShape(VrddhihRadii.md))
-            .padding(horizontal = VrddhihSpacing.md, vertical = VrddhihSpacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
+            .width(84.dp)
+            .clip(RoundedCornerShape(VrddhihRadii.lg))
+            .clickable(onClick = onClick)
+            .padding(vertical = VrddhihSpacing.xs),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Cute royal category badge
-        CuteCategoryBadge(
-            category = category,
-            size = 44.dp,
-            iconSize = 22.dp,
-        )
+        // Large rounded-square colored icon container
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .neonAmbientGlow(
+                    color = accentColor,
+                    radius = 10.dp,
+                    alpha = 0.28f,
+                )
+                .clip(RoundedCornerShape(VrddhihRadii.lg))
+                .background(accentColor),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = iconVector,
+                contentDescription = category.name,
+                tint = VrddhihColors.Void,
+                modifier = Modifier.size(32.dp),
+            )
+        }
 
-        Spacer(Modifier.width(VrddhihSpacing.md))
+        Spacer(Modifier.height(VrddhihSpacing.xs))
 
         Text(
             text = category.name,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
             color = VrddhihColors.TextPrimary,
-            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth(),
         )
 
-        if (category.isBuiltIn) {
-            Text(
-                text = "Built-in",
-                style = MaterialTheme.typography.labelSmall,
-                color = VrddhihColors.TextMuted,
-            )
-        } else {
-            onEdit?.let {
-                IconButton(onClick = it, modifier = Modifier.size(40.dp)) {
-                    Icon(Icons.Outlined.Edit, contentDescription = "Edit", tint = VrddhihColors.Ice, modifier = Modifier.size(18.dp))
-                }
-            }
-            onDelete?.let {
-                IconButton(onClick = it, modifier = Modifier.size(40.dp)) {
-                    Icon(Icons.Outlined.Delete, contentDescription = "Delete", tint = VrddhihColors.Danger, modifier = Modifier.size(18.dp))
-                }
-            }
-        }
+        Spacer(Modifier.height(2.dp))
+
+        Text(
+            text = countText,
+            style = MaterialTheme.typography.labelSmall,
+            color = VrddhihColors.TextSecondary,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
@@ -327,6 +390,7 @@ fun CategoryEditorDialog(
     onSetColor: (Int) -> Unit,
     onDismiss: () -> Unit,
     onSave: () -> Unit,
+    onDelete: ((CategoryEntity) -> Unit)? = null,
 ) {
     var showIconPicker by remember { mutableStateOf(false) }
 
@@ -346,7 +410,11 @@ fun CategoryEditorDialog(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = if (state.editingCategory == null) "New Category" else "Edit Category",
+                    text = if (state.editingCategory == null) {
+                        stringResource(R.string.categories_new_action)
+                    } else {
+                        stringResource(R.string.categories_edit_title)
+                    },
                     style = MaterialTheme.typography.titleLarge,
                     color = VrddhihColors.TextPrimary,
                 )
@@ -452,17 +520,32 @@ fun CategoryEditorDialog(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(onClick = onDismiss) {
-                    Text("Cancel", color = VrddhihColors.TextSecondary)
+                if (state.editingCategory != null && onDelete != null) {
+                    TextButton(onClick = {
+                        val target = state.editingCategory
+                        onDismiss()
+                        onDelete(target)
+                    }) {
+                        Text(stringResource(R.string.action_delete), color = VrddhihColors.Danger)
+                    }
+                } else {
+                    Spacer(Modifier.width(1.dp))
                 }
-                Spacer(Modifier.width(VrddhihSpacing.md))
-                com.vrddhih.app.core.ui.components.VrddhihPrimaryButton(
-                    text = "Save",
-                    onClick = onSave,
-                    accent = VrddhihColors.NeonGreen,
-                )
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.action_cancel), color = VrddhihColors.TextSecondary)
+                    }
+                    Spacer(Modifier.width(VrddhihSpacing.md))
+                    VrddhihPrimaryButton(
+                        text = stringResource(R.string.action_save),
+                        onClick = onSave,
+                        accent = VrddhihColors.NeonGreen,
+                    )
+                }
             }
         }
     }

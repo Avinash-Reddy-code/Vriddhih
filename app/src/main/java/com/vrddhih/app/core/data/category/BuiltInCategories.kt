@@ -14,21 +14,12 @@ import com.vrddhih.app.core.data.local.entity.CategoryEntity
 object BuiltInCategories {
 
     val ALL: List<CategoryEntity> = listOf(
-        cat("builtin_body",           "Body",             "person",                 0xFFFF6B8B),
-        cat("builtin_mind",           "Mind",             "self_improvement",       0xFFBA68C8),
-        cat("builtin_work",           "Work",             "work",                   0xFF3D82F6),
-        cat("builtin_study",          "Study",            "school",                 0xFF7986CB),
-        cat("builtin_coding",         "Coding",           "code",                   0xFF00E5FF),
-        cat("builtin_home",           "Home",             "home",                   0xFFFFA726),
-        cat("builtin_fitness",        "Fitness",          "fitness_center",         0xFF00E676),
-        cat("builtin_food",           "Food",             "local_dining",           0xFFFF7043),
-        cat("builtin_sleep",          "Sleep",            "bedtime",                0xFF9575CD),
-        cat("builtin_money",          "Money",            "account_balance_wallet", 0xFFFFD700),
-        cat("builtin_social",         "Social",           "people",                 0xFFFF4081),
-        cat("builtin_family",         "Family",           "family_restroom",        0xFFFF8A80),
-        cat("builtin_selfcare",       "Self-care",        "spa",                    0xFF26A69A),
-        cat("builtin_errands",        "Errands",          "shopping_cart",          0xFFCE93D8),
-        cat("builtin_other",          "Other",            "more_horiz",             0xFF90A4AE),
+        cat("builtin_body",    "Body",    "person",           0xFFFF72C6),
+        cat("builtin_mind",    "Mind",    "self_improvement", 0xFFB388FF),
+        cat("builtin_work",    "Work",    "work",             0xFF5795FF),
+        cat("builtin_fitness", "Fitness", "fitness_center",   0xFF59F581),
+        cat("builtin_sleep",   "Sleep",   "bedtime",          0xFF38E5E5),
+        cat("builtin_health",  "Health",  "favorite",         0xFFFF7777),
     ).mapIndexed { index, entity -> entity.copy(sortOrder = index) }
 
     private fun cat(id: String, name: String, iconKey: String, colorValue: Long) = CategoryEntity(
