@@ -335,4 +335,12 @@
         <item>XP history, levels and achievements</item>
         <item>Weekly and monthly reports</item>
     </string-array>
+
+    <!-- Common FAB & Creation Sheet -->
+    <string name="action_create">Create</string>
+    <string name="create_sheet_eyebrow">System · Initialize</string>
+    <string name="create_sheet_title">Create New</string>
+    <string name="create_sheet_quest_desc">Single task, directive, or daily checklist</string>
+    <string name="create_sheet_habit_desc">Recurring daily or weekly routine</string>
+    <string name="create_sheet_goal_desc">Long-term milestone or numeric target</string>
 </resources>

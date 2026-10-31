@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.vrddhih.app.VrddhihApplication
 import com.vrddhih.app.core.data.local.entity.CategoryEntity
 import com.vrddhih.app.core.data.repository.CategoryRepository
+import com.vrddhih.app.core.ui.components.CategoryColors
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +23,7 @@ data class CategoryEditorState(
     val editingCategory: CategoryEntity? = null,
     val name: String = "",
     val iconKey: String = "person",
-    val colorArgb: Int = 0xFF7CD3FF.toInt(),
+    val colorArgb: Int = CategoryColors.DEFAULT_COLOR_ARGB,
     val nameError: String? = null,
 )
 
@@ -68,7 +69,7 @@ class CategoriesViewModel(
             editingCategory = null,
             name = "",
             iconKey = "person",
-            colorArgb = 0xFF7CD3FF.toInt(),
+            colorArgb = CategoryColors.DEFAULT_COLOR_ARGB,
         )
     }
 

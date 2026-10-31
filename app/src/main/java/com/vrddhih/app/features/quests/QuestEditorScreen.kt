@@ -103,6 +103,7 @@ import com.vrddhih.app.core.theme.VrddhihDimens
 import com.vrddhih.app.core.theme.VrddhihRadii
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
+import com.vrddhih.app.core.ui.components.CategoryColors
 import com.vrddhih.app.core.ui.components.CategorySelectionTile
 import com.vrddhih.app.core.ui.components.CreateCustomCategoryTile
 import com.vrddhih.app.core.ui.components.SystemPanel
@@ -155,7 +156,7 @@ fun QuestEditorScreen(
     var showTimePicker by remember { mutableStateOf(false) }
     var showCustomCategoryDialog by remember { mutableStateOf(false) }
     var customCategoryState by remember {
-        mutableStateOf(CategoryEditorState(isOpen = true, editingCategory = null, name = "", iconKey = "star", colorArgb = 0xFF7CD3FF.toInt()))
+        mutableStateOf(CategoryEditorState(isOpen = true, editingCategory = null, name = "", iconKey = "star", colorArgb = CategoryColors.DEFAULT_COLOR_ARGB))
     }
 
     var showDiscardDialog by remember { mutableStateOf(false) }
@@ -395,7 +396,7 @@ fun QuestEditorScreen(
                                         editingCategory = null,
                                         name = "",
                                         iconKey = "star",
-                                        colorArgb = 0xFF7CD3FF.toInt(),
+                                        colorArgb = CategoryColors.DEFAULT_COLOR_ARGB,
                                     )
                                     showCustomCategoryDialog = true
                                 },

@@ -170,6 +170,9 @@ object CategoryIcons {
 
 /** A curated accessible color palette for custom category accent colors matching the ultra-dark neon system. */
 object CategoryColors {
+    /** Default color chosen for new custom categories; matches "Electric Blue" from [PALETTE]. */
+    val DEFAULT_COLOR_ARGB: Int = 0xFF5795FF.toInt()
+
     /** Each pair is (ARGB int, human-readable label). */
     val PALETTE: List<Pair<Int, String>> = listOf(
         0xFF59F581.toInt() to "Neon Green",

@@ -61,7 +61,6 @@ import com.vrddhih.app.core.theme.VrddhihRadii
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
 import com.vrddhih.app.core.theme.VrddhihTheme
-import com.vrddhih.app.core.ui.components.AnchoredPrimaryAction
 import com.vrddhih.app.core.ui.components.ScreenHeader
 import com.vrddhih.app.core.ui.components.SystemPanel
 import com.vrddhih.app.core.ui.components.SystemTag
@@ -299,13 +298,6 @@ fun QuestsScreen(
                 }
             }
         }
-
-        AnchoredPrimaryAction(
-            text = stringResource(R.string.quests_new_action),
-            onClick = onOpenCreate,
-            accent = VrddhihColors.Electric,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
     }
 
     if (uiState.isDetailOpen && uiState.selectedOccurrence != null) {

@@ -40,7 +40,6 @@ import com.vrddhih.app.core.theme.VrddhihColors
 import com.vrddhih.app.core.theme.VrddhihDimens
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
-import com.vrddhih.app.core.ui.components.AnchoredPrimaryAction
 import com.vrddhih.app.core.ui.components.CalendarToggleButton
 import com.vrddhih.app.core.ui.components.ScreenHeader
 import com.vrddhih.app.core.ui.components.VrddhihCalendarDialog
@@ -154,12 +153,6 @@ fun HabitsScreen(
                     }
                 }
             }
-
-            AnchoredPrimaryAction(
-                text = stringResource(R.string.habits_new_action),
-                onClick = viewModel::openCreateHabit,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
         }
     }
 

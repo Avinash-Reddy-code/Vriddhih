@@ -1,6 +1,17 @@
 package com.vrddhih.app.core.ui.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,10 +23,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -25,12 +39,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.vrddhih.app.R
 import com.vrddhih.app.core.theme.VrddhihBrushes
 import com.vrddhih.app.core.theme.VrddhihColors
+import com.vrddhih.app.core.theme.VrddhihRadii
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
 import com.vrddhih.app.core.theme.VrddhihTheme
@@ -122,6 +142,116 @@ fun SectionHeader(
                 .semantics { heading() },
         )
         trailing?.invoke(this)
+    }
+}
+
+/**
+ * Shared main screen header across all primary tabs (Dashboard, Activities, Goals, Finance).
+ *
+ * Guarantees:
+ * - Hamburger menu button fixed at the exact same position on every main tab.
+ * - Dynamic heading beginning at the exact same horizontal position regardless of length.
+ * - Smooth horizontal sliding text animation when switching between tabs (inspired by HabitNow).
+ * - Trailing actions slot for contextual actions (e.g. Stats & Calendar on Dashboard).
+ */
+@Composable
+fun MainScreenHeader(
+    pageIndex: Int,
+    title: String,
+    onOpenDrawer: () -> Unit,
+    modifier: Modifier = Modifier,
+    isTitleClickable: Boolean = false,
+    onTitleClick: () -> Unit = {},
+    titleClickLabel: String? = null,
+    actions: @Composable (RowScope.() -> Unit)? = null,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(
+                start = VrddhihSpacing.lg,
+                end = VrddhihSpacing.lg,
+                top = VrddhihSpacing.xs,
+                bottom = VrddhihSpacing.xs,
+            ),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm),
+            modifier = Modifier.weight(1f, fill = false),
+        ) {
+            IconButton(
+                onClick = onOpenDrawer,
+                modifier = Modifier.size(48.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(VrddhihColors.PanelRaised)
+                        .border(1.dp, VrddhihColors.OutlineBright, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Menu,
+                        contentDescription = stringResource(R.string.nav_drawer_open),
+                        tint = VrddhihColors.Cyan,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+
+            AnimatedContent(
+                targetState = title,
+                transitionSpec = {
+                    val slideSpec = tween<IntOffset>(durationMillis = 180, easing = FastOutSlowInEasing)
+                    val fadeSpec = tween<Float>(durationMillis = 160, easing = FastOutSlowInEasing)
+                    (slideInVertically(
+                        animationSpec = slideSpec,
+                        initialOffsetY = { -it / 2 },
+                    ) + fadeIn(animationSpec = fadeSpec)).togetherWith(
+                        slideOutVertically(
+                            animationSpec = slideSpec,
+                            targetOffsetY = { it / 2 },
+                        ) + fadeOut(animationSpec = fadeSpec)
+                    )
+                },
+                label = "main_screen_heading",
+            ) { displayTitle ->
+                Text(
+                    text = displayTitle,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = VrddhihColors.TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = if (isTitleClickable) {
+                        Modifier
+                            .clip(RoundedCornerShape(VrddhihRadii.sm))
+                            .clickable(
+                                role = Role.Button,
+                                onClickLabel = titleClickLabel,
+                                onClick = onTitleClick,
+                            )
+                            .padding(vertical = VrddhihSpacing.xxs, horizontal = VrddhihSpacing.xs)
+                    } else {
+                        Modifier.padding(vertical = VrddhihSpacing.xxs, horizontal = VrddhihSpacing.xs)
+                    },
+                )
+            }
+        }
+
+        if (actions != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.xs),
+            ) {
+                actions()
+            }
+        }
     }
 }
 

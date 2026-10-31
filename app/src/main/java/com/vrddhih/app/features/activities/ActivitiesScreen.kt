@@ -1,5 +1,6 @@
 package com.vrddhih.app.features.activities
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -88,13 +89,12 @@ fun ActivitiesRoute(
     onNavigateToEditQuest: (Long, LocalDate) -> Unit = { _, _ -> },
     questsViewModel: QuestsViewModel = viewModel(factory = QuestsViewModel.Factory),
     habitsViewModel: HabitsViewModel = viewModel(factory = HabitsViewModel.Factory),
-    initialTab: ActivityTab = ActivityTab.TASKS,
+    selectedTab: ActivityTab = ActivityTab.TASKS,
+    onTabSelected: (ActivityTab) -> Unit = {},
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(initialTab) }
-
     ActivitiesScreen(
         selectedTab = selectedTab,
-        onTabSelected = { selectedTab = it },
+        onTabSelected = onTabSelected,
         parentPagerState = parentPagerState,
         onNavigateToCategories = onNavigateToCategories,
         onNavigateToCreateQuest = onNavigateToCreateQuest,
@@ -139,6 +139,16 @@ fun ActivitiesScreen(
         }
     }
 
+    BackHandler(enabled = selectedTab != ActivityTab.TASKS) {
+        onTabSelected(ActivityTab.TASKS)
+        coroutineScope.launch {
+            pagerState.animateScrollToPage(
+                page = ActivityTab.TASKS.ordinal,
+                animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+            )
+        }
+    }
+
     val nestedConnection = remember(parentPagerState, pagerState) {
         parentPagerState?.let { parent ->
             createNestedPagerConnection(parentState = parent, childState = pagerState)
@@ -160,16 +170,11 @@ fun ActivitiesScreen(
                     .padding(
                         start = VrddhihSpacing.lg,
                         end = VrddhihSpacing.lg,
-                        top = VrddhihSpacing.xl,
+                        top = VrddhihSpacing.xs,
                         bottom = VrddhihSpacing.xs,
                     ),
                 verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.md),
             ) {
-                ScreenHeader(
-                    eyebrow = stringResource(R.string.activities_eyebrow),
-                    title = stringResource(R.string.activities_title),
-                )
-
                 val displayTab = ActivityTab.entries[pagerState.targetPage]
                 ActivitiesSegmentedControl(
                     selectedTab = displayTab,

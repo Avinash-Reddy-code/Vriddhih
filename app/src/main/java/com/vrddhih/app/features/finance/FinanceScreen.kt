@@ -12,8 +12,6 @@ import com.vrddhih.app.core.ui.components.FeaturePlaceholder
 @Composable
 fun FinanceScreen(modifier: Modifier = Modifier) {
     FeaturePlaceholder(
-        eyebrow = stringResource(R.string.finance_eyebrow),
-        title = stringResource(R.string.finance_title),
         icon = Icons.Outlined.AccountBalanceWallet,
         description = stringResource(R.string.finance_description),
         phaseLabel = stringResource(R.string.finance_phase),

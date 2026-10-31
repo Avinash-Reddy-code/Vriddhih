@@ -42,13 +42,13 @@ import com.vrddhih.app.core.theme.VrddhihSpacing
  */
 @Composable
 fun FeaturePlaceholder(
-    eyebrow: String,
-    title: String,
     icon: ImageVector,
     description: String,
     phaseLabel: String,
     plannedCapabilities: List<String>,
     modifier: Modifier = Modifier,
+    eyebrow: String? = null,
+    title: String? = null,
     onBack: (() -> Unit)? = null,
 ) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -57,7 +57,12 @@ fun FeaturePlaceholder(
                 .widthIn(max = VrddhihDimens.ContentMaxWidth)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = VrddhihSpacing.lg, vertical = VrddhihSpacing.xl),
+                .padding(
+                    start = VrddhihSpacing.lg,
+                    end = VrddhihSpacing.lg,
+                    top = if (eyebrow == null && title == null) VrddhihSpacing.md else VrddhihSpacing.xl,
+                    bottom = 96.dp,
+                ),
             verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.lg),
         ) {
             if (onBack != null) {
@@ -83,7 +88,9 @@ fun FeaturePlaceholder(
                 }
             }
 
-            ScreenHeader(eyebrow = eyebrow, title = title)
+            if (!eyebrow.isNullOrBlank() || !title.isNullOrBlank()) {
+                ScreenHeader(eyebrow = eyebrow, title = title.orEmpty())
+            }
 
             SystemPanel(glow = true) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

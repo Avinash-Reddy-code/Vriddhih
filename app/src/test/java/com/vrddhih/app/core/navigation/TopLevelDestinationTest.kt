@@ -25,4 +25,21 @@ class TopLevelDestinationTest {
         assertNotNull(activities.selectedIcon)
         assertNotNull(activities.unselectedIcon)
     }
+
+    @Test
+    fun destinationsHaveStableOrdinalsMatchingPagerIndices() {
+        TopLevelDestination.entries.forEachIndexed { index, destination ->
+            assertEquals(index, destination.ordinal)
+        }
+    }
+
+    @Test
+    fun destinationRoutesAreDistinctAndStable() {
+        val routes = TopLevelDestination.entries.map { it.route }
+        assertEquals(4, routes.distinct().size)
+        assertEquals("dashboard", routes[0])
+        assertEquals("activities", routes[1])
+        assertEquals("goals", routes[2])
+        assertEquals("finance", routes[3])
+    }
 }

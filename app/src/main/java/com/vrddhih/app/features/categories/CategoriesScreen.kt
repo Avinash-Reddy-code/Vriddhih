@@ -290,7 +290,7 @@ fun CategoriesScreen(
                     onClick = onConfirmDelete,
                     colors = ButtonDefaults.buttonColors(containerColor = VrddhihColors.Danger),
                 ) {
-                    Text(stringResource(R.string.action_delete), color = Color.White)
+                    Text(stringResource(R.string.action_delete), color = VrddhihColors.TextPrimary)
                 }
             },
             dismissButton = {

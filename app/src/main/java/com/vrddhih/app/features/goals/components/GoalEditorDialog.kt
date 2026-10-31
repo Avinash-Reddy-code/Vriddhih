@@ -343,7 +343,7 @@ fun GoalEditorDialog(
                                                 Icon(
                                                     imageVector = Icons.Outlined.Add,
                                                     contentDescription = stringResource(R.string.goal_field_add_milestone),
-                                                    tint = Color.Black,
+                                                    tint = VrddhihColors.Void,
                                                 )
                                             }
                                         }
@@ -723,7 +723,7 @@ fun GoalEditorDialog(
                                 if (isEdit) R.string.goal_action_update else R.string.goal_action_save,
                             ).uppercase(),
                             style = VrddhihTextStyles.SystemLabel,
-                            color = Color.Black,
+                            color = VrddhihColors.Void,
                             fontWeight = FontWeight.Bold,
                         )
                     }
@@ -759,7 +759,7 @@ fun GoalEditorDialog(
                 ) {
                     Text(
                         stringResource(R.string.goal_action_delete),
-                        color = Color.White,
+                        color = VrddhihColors.TextPrimary,
                     )
                 }
             },

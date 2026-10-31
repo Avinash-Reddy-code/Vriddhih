@@ -70,8 +70,8 @@ fun CuteCategoryBadge(
     val backgroundBrush = if (isGold) {
         Brush.linearGradient(
             listOf(
-                Color(0xFFFFD700).copy(alpha = if (isSelected) 0.35f else 0.22f),
-                Color(0xFF8A6D05).copy(alpha = if (isSelected) 0.25f else 0.12f),
+                VrddhihColors.Gold.copy(alpha = if (isSelected) 0.35f else 0.22f),
+                VrddhihColors.GoldDark.copy(alpha = if (isSelected) 0.25f else 0.12f),
             )
         )
     } else {

@@ -388,9 +388,9 @@ private fun QuestCheck(checked: Boolean) {
 @Composable
 private fun PriorityTag(priority: QuestPriority) {
     val (labelRes, color) = when (priority) {
-        QuestPriority.HIGH -> R.string.priority_high to VrddhihColors.Danger
-        QuestPriority.MEDIUM -> R.string.priority_medium to VrddhihColors.Warning
-        QuestPriority.LOW -> R.string.priority_low to VrddhihColors.Success
+        QuestPriority.HIGH -> R.string.priority_high to VrddhihColors.Warning
+        QuestPriority.MEDIUM -> R.string.priority_medium to VrddhihColors.Electric
+        QuestPriority.LOW -> R.string.priority_low to VrddhihColors.TextSecondary
     }
     SystemTag(text = stringResource(labelRes), color = color)
 }

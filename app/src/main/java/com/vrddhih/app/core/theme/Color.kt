@@ -18,12 +18,20 @@ object VrddhihColors {
 
     // Ultra-dark Neon Accent Palette
     val NeonGreen = Color(0xFF59F581)     // Habit Tick vibrant neon green
+    val NeonGreenBright = Color(0xFF7DFF9E) // Success gradient luminous highlight
     val Electric = Color(0xFF5795FF)      // Electric blue
     val Cyan = Color(0xFF38E5E5)          // Vivid cyan / ice energy
     val Violet = Color(0xFFB388FF)        // Neon violet / royal
     val Pink = Color(0xFFFF72C6)          // Vibrant pink
     val Amber = Color(0xFFFFC45C)         // Warm neon amber
     val Coral = Color(0xFFFF7777)         // Neon coral
+    val Gold = Color(0xFFFFD700)          // Category & reward gold accent
+    val GoldDark = Color(0xFF8A6D05)      // Deeper gold for gradient shading
+
+    // Floating action button fiery orange accents
+    val Orange = Color(0xFFFF6A00)        // Intense vivid orange (#FF6A00)
+    val OrangePressed = Color(0xFFE85A00) // Pressed state orange (#E85A00)
+    val OrangeDarkIcon = Color(0xFF1A0A00)// Deep near-black icon (#1A0A00) for strong contrast
 
     // High-contrast typography tokens
     val TextPrimary = Color(0xFFF5F6F8)   // Near-white primary text
@@ -39,12 +47,30 @@ object VrddhihColors {
     val Sample = Violet                   // Mock / sample data indicator
 }
 
+/** Glassmorphism design tokens for translucent surfaces, specular rims, and blur underlays. */
+object VrddhihGlass {
+    val SurfaceTop = Color(0x750C0E18)
+    val SurfaceBottom = Color(0x8F060810)
+    val SpecularTop = Color(0x26FFFFFF)
+    val SpecularMid = Color(0x08FFFFFF)
+    val BorderTop = Color(0x52FFFFFF)
+    val BorderMid = Color(0x29FFFFFF)
+    val BorderBottom = Color(0x1AFFFFFF)
+    val ShadowAmbient = Color(0x33000000)
+    val ShadowSpot = Color(0x4D000000)
+    val FallbackSurface = Color(0x4006080E)
+
+    val SurfaceBrush = Brush.verticalGradient(listOf(SurfaceTop, SurfaceBottom))
+    val SpecularBrush = Brush.verticalGradient(listOf(SpecularTop, SpecularMid, Color.Transparent))
+    val BorderBrush = Brush.verticalGradient(listOf(BorderTop, BorderMid, BorderBottom))
+}
+
 object VrddhihBrushes {
     val Backdrop = Brush.verticalGradient(listOf(VrddhihColors.Void, VrddhihColors.Void))
     val Panel = Brush.verticalGradient(listOf(VrddhihColors.PanelRaised, VrddhihColors.Panel))
     val Energy = Brush.horizontalGradient(listOf(VrddhihColors.Electric, VrddhihColors.Cyan))
     val EnergyVertical = Brush.verticalGradient(listOf(VrddhihColors.Cyan, VrddhihColors.Electric))
-    val NeonSuccess = Brush.horizontalGradient(listOf(VrddhihColors.NeonGreen, Color(0xFF7DFF9E)))
+    val NeonSuccess = Brush.horizontalGradient(listOf(VrddhihColors.NeonGreen, VrddhihColors.NeonGreenBright))
     val Emblem = Brush.linearGradient(listOf(VrddhihColors.PanelRaised, VrddhihColors.Panel))
     val Divider = Brush.horizontalGradient(
         listOf(Color.Transparent, VrddhihColors.OutlineBright.copy(alpha = 0.5f), Color.Transparent),

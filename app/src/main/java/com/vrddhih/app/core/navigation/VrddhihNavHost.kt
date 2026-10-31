@@ -16,8 +16,12 @@ import androidx.navigation.NavHostController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vrddhih.app.features.activities.ActivitiesRoute
 import com.vrddhih.app.features.dashboard.DashboardRoute
+import com.vrddhih.app.features.dashboard.DashboardViewModel
+import com.vrddhih.app.features.activities.ActivityTab
 import com.vrddhih.app.features.finance.FinanceScreen
 import com.vrddhih.app.features.goals.GoalsRoute
+import com.vrddhih.app.features.goals.GoalsViewModel
+import com.vrddhih.app.features.habits.HabitsViewModel
 import com.vrddhih.app.features.quests.QuestsViewModel
 import java.time.LocalDate
 
@@ -30,6 +34,11 @@ fun VrddhihNavHost(
     onNavigateToCreateQuest: () -> Unit = {},
     onNavigateToEditQuest: (Long, LocalDate) -> Unit = { _, _ -> },
     questsViewModel: QuestsViewModel = viewModel(factory = QuestsViewModel.Factory),
+    dashboardViewModel: DashboardViewModel = viewModel(factory = DashboardViewModel.Factory),
+    habitsViewModel: HabitsViewModel = viewModel(factory = HabitsViewModel.Factory),
+    goalsViewModel: GoalsViewModel = viewModel(factory = GoalsViewModel.Factory),
+    selectedActivityTab: ActivityTab = ActivityTab.TASKS,
+    onActivityTabSelected: (ActivityTab) -> Unit = {},
 ) {
     HorizontalPager(
         state = pagerState,
@@ -48,6 +57,7 @@ fun VrddhihNavHost(
             TopLevelDestination.DASHBOARD -> DashboardRoute(
                 onNavigateToCategories = onNavigateToCategories,
                 onNavigateToStats = onNavigateToStats,
+                viewModel = dashboardViewModel,
             )
             TopLevelDestination.ACTIVITIES -> ActivitiesRoute(
                 parentPagerState = pagerState,
@@ -55,8 +65,13 @@ fun VrddhihNavHost(
                 onNavigateToCreateQuest = onNavigateToCreateQuest,
                 onNavigateToEditQuest = onNavigateToEditQuest,
                 questsViewModel = questsViewModel,
+                habitsViewModel = habitsViewModel,
+                selectedTab = selectedActivityTab,
+                onTabSelected = onActivityTabSelected,
             )
-            TopLevelDestination.GOALS -> GoalsRoute()
+            TopLevelDestination.GOALS -> GoalsRoute(
+                viewModel = goalsViewModel,
+            )
             TopLevelDestination.FINANCE -> FinanceScreen()
         }
     }

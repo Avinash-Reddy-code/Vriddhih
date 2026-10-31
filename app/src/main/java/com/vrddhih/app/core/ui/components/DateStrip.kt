@@ -21,9 +21,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,8 +40,10 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.vrddhih.app.R
 import com.vrddhih.app.core.theme.VrddhihBrushes
 import com.vrddhih.app.core.theme.VrddhihColors
@@ -61,20 +60,19 @@ import java.time.format.TextStyle as JavaTextStyle
 
 const val DATE_STRIP_TEST_TAG = "date_strip"
 
-private val DateCellWidth = 50.dp
-private val DateCellHeight = 68.dp
+private val DateCellWidth = 46.dp
+private val DateCellHeight = 60.dp
 private val DateCellGap = 6.dp
 private const val TIMELINE_PAST_DAYS = 180L
 private const val TIMELINE_FUTURE_DAYS = 180L
 private const val TOTAL_TIMELINE_DAYS = (TIMELINE_PAST_DAYS + TIMELINE_FUTURE_DAYS + 1).toInt()
 
 /**
- * A horizontally scrollable date timeline inspired by HabitNow.
+ * A horizontally scrollable compact date timeline inspired by HabitNow.
  *
  * Efficiently streams dates around [today] via a [LazyRow]. Ordinary finger-following scrolling
  * moves dates naturally with no sudden jumps, bounces, or page-turn animations. Tapping a date
- * updates [selectedDate] without resetting scroll position. A sleek Today quick-action button
- * appears whenever historical or future dates are active.
+ * updates [selectedDate] without resetting scroll position.
  */
 @Composable
 fun DateStrip(
@@ -107,71 +105,42 @@ fun DateStrip(
         }
     }
 
-    Column(
+    LazyRow(
+        state = listState,
         modifier = modifier
             .fillMaxWidth()
-            .testTag(DATE_STRIP_TEST_TAG),
+            .testTag(DATE_STRIP_TEST_TAG)
+            .semantics {
+                contentDescription = "Date timeline"
+            },
+        horizontalArrangement = Arrangement.spacedBy(DateCellGap),
+        contentPadding = PaddingValues(horizontal = VrddhihSpacing.xs),
     ) {
-        // Month/Year header with contextual "TODAY" return action
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = VrddhihSpacing.xs, vertical = VrddhihSpacing.xxs),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val monthName = selectedDate.month.getDisplayName(JavaTextStyle.FULL_STANDALONE, locale)
-                .replaceFirstChar { it.titlecase(locale) }
-            Text(
-                text = "${monthName.uppercase(locale)} ${selectedDate.year}",
-                style = VrddhihTextStyles.TagLabel,
-                color = VrddhihColors.TextSecondary,
+        items(
+            count = TOTAL_TIMELINE_DAYS,
+            key = { index -> anchorDate.plusDays(index.toLong()).toEpochDay() },
+        ) { index ->
+            val date = anchorDate.plusDays(index.toLong())
+            val isSelected = date == selectedDate
+            val isToday = date == today
+            val isFirstOfMonth = date.dayOfMonth == 1
+
+            val weekdayShort = if (isFirstOfMonth) {
+                date.month.getDisplayName(JavaTextStyle.SHORT, locale).uppercase(locale)
+            } else {
+                date.dayOfWeek.getDisplayName(JavaTextStyle.SHORT, locale).uppercase(locale)
+            }
+
+            DateStripCell(
+                date = date,
+                weekday = weekdayShort,
+                accessibilityLabel = labelFormatter.format(date),
+                isSelected = isSelected,
+                isToday = isToday,
+                isFirstOfMonth = isFirstOfMonth,
+                width = DateCellWidth,
+                onClick = { onDateSelected(date) },
             )
-
-            if (selectedDate != today) {
-                TodayReturnButton(onClick = onSelectToday)
-            }
-        }
-
-        Spacer(Modifier.height(VrddhihSpacing.xs))
-
-        // Horizontally scrollable date timeline
-        LazyRow(
-            state = listState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics {
-                    contentDescription = "Date timeline"
-                },
-            horizontalArrangement = Arrangement.spacedBy(DateCellGap),
-            contentPadding = PaddingValues(horizontal = VrddhihSpacing.xs),
-        ) {
-            items(
-                count = TOTAL_TIMELINE_DAYS,
-                key = { index -> anchorDate.plusDays(index.toLong()).toEpochDay() },
-            ) { index ->
-                val date = anchorDate.plusDays(index.toLong())
-                val isSelected = date == selectedDate
-                val isToday = date == today
-                val isFirstOfMonth = date.dayOfMonth == 1
-
-                val weekdayShort = if (isFirstOfMonth) {
-                    date.month.getDisplayName(JavaTextStyle.SHORT, locale).uppercase(locale)
-                } else {
-                    date.dayOfWeek.getDisplayName(JavaTextStyle.SHORT, locale).uppercase(locale)
-                }
-
-                DateStripCell(
-                    date = date,
-                    weekday = weekdayShort,
-                    accessibilityLabel = labelFormatter.format(date),
-                    isSelected = isSelected,
-                    isToday = isToday,
-                    isFirstOfMonth = isFirstOfMonth,
-                    width = DateCellWidth,
-                    onClick = { onDateSelected(date) },
-                )
-            }
         }
     }
 }
@@ -187,29 +156,41 @@ private fun DateStripCell(
     width: Dp,
     onClick: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(VrddhihRadii.md)
-    val highlightToday = isSelected && isToday
+    val outerShape = RoundedCornerShape(14.dp)
+    val insetShape = RoundedCornerShape(10.dp)
 
-    val contentColor by animateColorAsState(
+    val animatedBorderColor by animateColorAsState(
         targetValue = when {
-            highlightToday -> VrddhihColors.Void
-            isSelected -> VrddhihColors.Frost
-            isToday -> VrddhihColors.Ice
-            else -> VrddhihColors.TextSecondary
+            isSelected -> VrddhihColors.Cyan.copy(alpha = 0.55f)
+            isToday -> VrddhihColors.Electric.copy(alpha = 0.5f)
+            isFirstOfMonth -> VrddhihColors.OutlineBright
+            else -> VrddhihColors.Outline
         },
-        label = "date-cell-content",
+        label = "cell-border",
     )
 
-    val borderColor = when {
-        highlightToday -> VrddhihColors.Ice
-        isSelected -> VrddhihColors.Electric
-        isToday -> VrddhihColors.Ice.copy(alpha = 0.6f)
-        isFirstOfMonth -> VrddhihColors.OutlineBright
-        else -> VrddhihColors.Outline
+    val weekdayColor = when {
+        isSelected -> VrddhihColors.Void.copy(alpha = 0.85f)
+        isToday -> VrddhihColors.Cyan
+        isFirstOfMonth -> VrddhihColors.Cyan
+        else -> VrddhihColors.TextMuted
     }
 
+    val lowerBlockBg = if (isSelected) {
+        VrddhihColors.Void.copy(alpha = 0.18f)
+    } else {
+        VrddhihColors.PanelRaised
+    }
+
+    val dateNumberColor = when {
+        isSelected -> VrddhihColors.Void
+        isToday -> VrddhihColors.Cyan
+        else -> VrddhihColors.TextPrimary
+    }
+
+    val todayDashColor = if (isSelected) VrddhihColors.Void.copy(alpha = 0.85f) else VrddhihColors.Cyan
+
     val stateLabel = dateStateLabel(isSelected = isSelected, isToday = isToday)
-    val glowColor = if (highlightToday) VrddhihColors.Cyan else VrddhihColors.Electric
 
     Box(
         modifier = Modifier
@@ -217,20 +198,20 @@ private fun DateStripCell(
             .height(DateCellHeight)
             .then(
                 if (isSelected) {
-                    Modifier.neonPillGlow(glowColor, spread = 4.dp, cornerRadius = VrddhihRadii.md, alpha = 0.28f)
+                    Modifier.neonPillGlow(VrddhihColors.Electric, spread = 3.dp, cornerRadius = 14.dp, alpha = 0.26f)
                 } else {
                     Modifier
                 },
             )
-            .clip(shape)
+            .clip(outerShape)
             .then(
-                when {
-                    highlightToday -> Modifier.background(VrddhihBrushes.Energy)
-                    isSelected -> Modifier.background(VrddhihColors.PanelRaised)
-                    else -> Modifier.background(VrddhihColors.Panel)
+                if (isSelected) {
+                    Modifier.background(VrddhihBrushes.Energy, outerShape)
+                } else {
+                    Modifier.background(VrddhihColors.Panel, outerShape)
                 },
             )
-            .border(if (isSelected) 1.5.dp else 1.dp, borderColor, shape)
+            .border(1.dp, animatedBorderColor, outerShape)
             .selectable(selected = isSelected, role = Role.Tab, onClick = onClick)
             .semantics {
                 contentDescription = accessibilityLabel
@@ -239,72 +220,77 @@ private fun DateStripCell(
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier.clearAndSetSemantics { },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(3.dp)
+                .clearAndSetSemantics { },
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = weekday,
-                style = VrddhihTextStyles.TagLabel,
-                color = if (isFirstOfMonth && !isSelected) VrddhihColors.Ice else contentColor,
-                maxLines = 1,
-            )
-            Spacer(Modifier.height(VrddhihSpacing.xxs))
-            Text(
-                text = date.dayOfMonth.toString(),
-                style = VrddhihTextStyles.NumericMedium,
-                color = contentColor,
-            )
-            Spacer(Modifier.height(VrddhihSpacing.xxs))
-            TodayDot(
-                visible = isToday,
-                color = if (highlightToday) VrddhihColors.Void else VrddhihColors.Ice,
-            )
-        }
-    }
-}
+            // Top Section: Abbreviated day of the week
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(21.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = weekday,
+                    style = VrddhihTextStyles.TagLabel,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                    color = weekdayColor,
+                    maxLines = 1,
+                )
+            }
 
-@Composable
-private fun TodayReturnButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .height(28.dp)
-            .clip(RoundedCornerShape(VrddhihRadii.lg))
-            .background(VrddhihColors.Electric.copy(alpha = 0.14f))
-            .border(1.dp, VrddhihColors.Ice.copy(alpha = 0.5f), RoundedCornerShape(VrddhihRadii.lg))
-            .selectable(selected = false, role = Role.Button, onClick = onClick)
-            .padding(horizontal = VrddhihSpacing.sm),
-        contentAlignment = Alignment.Center,
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.MyLocation,
-                contentDescription = null,
-                tint = VrddhihColors.Ice,
-                modifier = Modifier.size(12.dp),
-            )
-            Text(
-                text = stringResource(R.string.date_strip_today_action).uppercase(),
-                style = VrddhihTextStyles.TagLabel,
-                color = VrddhihColors.Ice,
-            )
+            // Bottom Section: Inset rounded block containing the date number and today dash
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .clip(insetShape)
+                    .background(lowerBlockBg),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = date.dayOfMonth.toString(),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                    ),
+                    color = dateNumberColor,
+                )
+
+                if (isToday) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 3.dp)
+                            .width(12.dp)
+                            .height(2.dp)
+                            .clip(RoundedCornerShape(1.dp))
+                            .background(todayDashColor),
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
 internal fun TodayDot(visible: Boolean, color: Color, modifier: Modifier = Modifier) {
-    Box(modifier = modifier.size(4.dp)) {
-        if (visible) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape)
-                    .background(color),
-            )
-        }
+    TodayBar(visible = visible, color = color, modifier = modifier)
+}
+
+@Composable
+internal fun TodayBar(visible: Boolean, color: Color, modifier: Modifier = Modifier) {
+    if (visible) {
+        Box(
+            modifier = modifier
+                .width(16.dp)
+                .height(2.5.dp)
+                .clip(RoundedCornerShape(1.dp))
+                .background(color),
+        )
     }
 }
 

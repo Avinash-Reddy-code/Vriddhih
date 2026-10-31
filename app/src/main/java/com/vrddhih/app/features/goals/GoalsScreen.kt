@@ -41,7 +41,6 @@ import com.vrddhih.app.core.theme.VrddhihDimens
 import com.vrddhih.app.core.theme.VrddhihRadii
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
-import com.vrddhih.app.core.ui.components.AnchoredPrimaryAction
 import com.vrddhih.app.features.goals.components.GoalCard
 import com.vrddhih.app.features.goals.components.GoalEditorDialog
 
@@ -108,8 +107,6 @@ fun GoalsScreen(
                     .widthIn(max = VrddhihDimens.ContentMaxWidth)
                     .fillMaxSize(),
             ) {
-                Header()
-
                 FilterTabs(
                     selectedFilter = uiState.filter,
                     onFilterSelected = onFilterChange,
@@ -152,12 +149,6 @@ fun GoalsScreen(
                     }
                 }
             }
-
-            AnchoredPrimaryAction(
-                text = stringResource(R.string.goals_new_action),
-                onClick = onOpenCreateGoal,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
         }
     }
 
@@ -168,27 +159,6 @@ fun GoalsScreen(
             onDismiss = onCloseEditor,
             onSave = onSaveGoal,
             onDelete = onDeleteGoal,
-        )
-    }
-}
-
-@Composable
-private fun Header() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = VrddhihSpacing.lg, vertical = VrddhihSpacing.md),
-    ) {
-        Text(
-            text = stringResource(R.string.goals_eyebrow).uppercase(),
-            style = VrddhihTextStyles.SystemLabel,
-            color = VrddhihColors.Ice,
-        )
-        Text(
-            text = stringResource(R.string.goals_title),
-            style = MaterialTheme.typography.titleLarge,
-            color = VrddhihColors.TextPrimary,
-            fontWeight = FontWeight.Bold,
         )
     }
 }
