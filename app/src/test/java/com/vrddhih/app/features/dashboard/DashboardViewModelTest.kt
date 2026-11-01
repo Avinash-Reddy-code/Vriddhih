@@ -432,4 +432,134 @@ class DashboardViewModelTest {
 
         db.close()
     }
+
+    @Test
+    fun numericHabit_evaluatesAllConditionsCorrectly() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, VrddhihDatabase::class.java)
+            .allowMainThreadQueries()
+            .addCallback(VrddhihDatabase.SEED_CALLBACK)
+            .build()
+        val habitRepo = HabitRepository(db, clock)
+
+        val viewModel = DashboardViewModel(
+            observeDayActivity = { flowOf(emptyDay) },
+            currentDate = { today },
+            habitRepository = habitRepo,
+        )
+        collectHabits(viewModel)
+
+        // 1. AT_LEAST (Target: 30)
+        val atLeastId = habitRepo.createHabit(name = "At Least Habit", type = HabitType.NUMERIC, startDate = today)
+        habitRepo.setNumericConfig(atLeastId, targetValue = 30, unit = "units", direction = com.vrddhih.app.core.data.local.entity.NumericDirection.AT_LEAST)
+
+        // 25 -> incomplete
+        viewModel.setHabitNumeric(atLeastId, 25)
+        val atLeastIncomplete = viewModel.habits.first { it.any { h -> h.id == atLeastId && h.numericCurrent == 25L } }
+        assertFalse(atLeastIncomplete.first { it.id == atLeastId }.isDone)
+
+        // 30 -> complete
+        viewModel.setHabitNumeric(atLeastId, 30)
+        val atLeastComplete = viewModel.habits.first { it.any { h -> h.id == atLeastId && h.numericCurrent == 30L && h.isDone } }
+        assertTrue(atLeastComplete.first { it.id == atLeastId }.isDone)
+
+        // 2. LESS_THAN / AT_MOST (Target: 30)
+        val lessThanId = habitRepo.createHabit(name = "Less Than Habit", type = HabitType.NUMERIC, startDate = today)
+        habitRepo.setNumericConfig(lessThanId, targetValue = 30, unit = "units", direction = com.vrddhih.app.core.data.local.entity.NumericDirection.AT_MOST)
+
+        // 25 -> complete
+        viewModel.setHabitNumeric(lessThanId, 25)
+        val lessThanComplete = viewModel.habits.first { it.any { h -> h.id == lessThanId && h.numericCurrent == 25L && h.isDone } }
+        assertTrue(lessThanComplete.first { it.id == lessThanId }.isDone)
+
+        // 35 -> incomplete (reversal)
+        viewModel.setHabitNumeric(lessThanId, 35)
+        val lessThanIncomplete = viewModel.habits.first { it.any { h -> h.id == lessThanId && h.numericCurrent == 35L && !h.isDone } }
+        assertFalse(lessThanIncomplete.first { it.id == lessThanId }.isDone)
+
+        // 3. EXACTLY (Target: 30)
+        val exactlyId = habitRepo.createHabit(name = "Exactly Habit", type = HabitType.NUMERIC, startDate = today)
+        habitRepo.setNumericConfig(exactlyId, targetValue = 30, unit = "units", direction = com.vrddhih.app.core.data.local.entity.NumericDirection.EXACTLY)
+
+        // 25 -> incomplete
+        viewModel.setHabitNumeric(exactlyId, 25)
+        val exactlyIncomplete = viewModel.habits.first { it.any { h -> h.id == exactlyId && h.numericCurrent == 25L } }
+        assertFalse(exactlyIncomplete.first { it.id == exactlyId }.isDone)
+
+        // 30 -> complete
+        viewModel.setHabitNumeric(exactlyId, 30)
+        val exactlyComplete = viewModel.habits.first { it.any { h -> h.id == exactlyId && h.numericCurrent == 30L && h.isDone } }
+        assertTrue(exactlyComplete.first { it.id == exactlyId }.isDone)
+
+        // 4. ANY_VALUE (with explicit confirmation)
+        val anyValId = habitRepo.createHabit(name = "Any Value Habit", type = HabitType.NUMERIC, startDate = today)
+        habitRepo.setNumericConfig(anyValId, targetValue = 0, unit = "units", direction = com.vrddhih.app.core.data.local.entity.NumericDirection.ANY_VALUE)
+
+        // Progress entered without marking complete
+        viewModel.setHabitNumeric(anyValId, 15, completed = false)
+        val anyValIncomplete = viewModel.habits.first { it.any { h -> h.id == anyValId && h.numericCurrent == 15L && !h.isDone } }
+        assertFalse(anyValIncomplete.first { it.id == anyValId }.isDone)
+
+        // Marked complete
+        viewModel.setHabitNumeric(anyValId, 15, completed = true)
+        val anyValComplete = viewModel.habits.first { it.any { h -> h.id == anyValId && h.numericCurrent == 15L && h.isDone } }
+        assertTrue(anyValComplete.first { it.id == anyValId }.isDone)
+
+        db.close()
+    }
+
+    @Test
+    fun checklistHabit_uncheckingReversesCompletion() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, VrddhihDatabase::class.java)
+            .allowMainThreadQueries()
+            .addCallback(VrddhihDatabase.SEED_CALLBACK)
+            .build()
+        val habitRepo = HabitRepository(db, clock)
+
+        val viewModel = DashboardViewModel(
+            observeDayActivity = { flowOf(emptyDay) },
+            currentDate = { today },
+            habitRepository = habitRepo,
+        )
+        collectHabits(viewModel)
+
+        val habitId = habitRepo.createHabit(name = "Daily Routine", type = HabitType.CHECKLIST, startDate = today)
+        val item1 = habitRepo.addChecklistItem(habitId, "Item 1", 0)
+        val item2 = habitRepo.addChecklistItem(habitId, "Item 2", 1)
+
+        // Check both items -> complete
+        viewModel.toggleChecklistItem(habitId, item1, true)
+        viewModel.toggleChecklistItem(habitId, item2, true)
+        val completeState = viewModel.habits.first { it.any { h -> h.id == habitId && h.isDone } }
+        assertTrue(completeState.first { it.id == habitId }.isDone)
+
+        // Uncheck one item -> returns to incomplete
+        viewModel.toggleChecklistItem(habitId, item2, false)
+        val reversedState = viewModel.habits.first { it.any { h -> h.id == habitId && !h.isDone } }
+        assertFalse(reversedState.first { it.id == habitId }.isDone)
+
+        db.close()
+    }
+
+    @Test
+    fun dashboardPresentation_completedHabitsSortBelowIncomplete_preservingRelativeOrder() {
+        val habitA = DashboardHabitItem(id = 1L, name = "Habit A", isDone = false)
+        val habitB = DashboardHabitItem(id = 2L, name = "Habit B", isDone = true)
+        val habitC = DashboardHabitItem(id = 3L, name = "Habit C", isDone = false)
+        val habitD = DashboardHabitItem(id = 4L, name = "Habit D", isDone = true)
+        val habitE = DashboardHabitItem(id = 5L, name = "Habit E", isDone = false)
+
+        val originalList = listOf(habitA, habitB, habitC, habitD, habitE)
+        val sorted = originalList.sortedBy { it.isDone }
+
+        // Incomplete habits come first, maintaining relative order A, C, E
+        assertEquals(listOf(1L, 3L, 5L, 2L, 4L), sorted.map { it.id })
+        assertFalse(sorted[0].isDone)
+        assertFalse(sorted[1].isDone)
+        assertFalse(sorted[2].isDone)
+        // Completed habits are moved down, maintaining relative order B, D
+        assertTrue(sorted[3].isDone)
+        assertTrue(sorted[4].isDone)
+    }
 }

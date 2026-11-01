@@ -347,16 +347,23 @@ class HabitRepository(
         true
     }
 
-    suspend fun updateNumericProgress(habitId: Long, date: LocalDate, value: Long): Boolean = db.withTransaction {
+    suspend fun updateNumericProgress(
+        habitId: Long,
+        date: LocalDate,
+        value: Long,
+        isCompleted: Boolean? = null,
+    ): Boolean = db.withTransaction {
         val habit = dao.getHabit(habitId) ?: return@withTransaction false
         if (habit.type != HabitType.NUMERIC) return@withTransaction false
 
         val config = dao.getNumericConfig(habitId)
         val target = config?.targetValue ?: 0L
-        val isTargetReached = if (config?.direction == NumericDirection.AT_MOST) {
-            value <= target && value > 0
-        } else {
-            value >= target
+        val direction = config?.direction ?: NumericDirection.AT_LEAST
+        val isTargetReached = when (direction) {
+            NumericDirection.AT_LEAST -> value >= target
+            NumericDirection.AT_MOST -> value <= target && value > 0
+            NumericDirection.EXACTLY -> value == target
+            NumericDirection.ANY_VALUE -> isCompleted ?: (value > 0)
         }
         val completionState = when {
             isTargetReached -> HabitCompletionState.COMPLETED
@@ -395,19 +402,68 @@ class HabitRepository(
         if (habit.type != HabitType.TIMER) return@withTransaction false
 
         val config = dao.getTimerConfig(habitId)
-        val dailyTarget = config?.dailyTargetSeconds ?: (config?.targetDurationSeconds ?: 0)
+        val dailyTarget = if ((config?.targetDurationSeconds ?: 0) > 0) {
+            config!!.targetDurationSeconds
+        } else {
+            config?.dailyTargetSeconds ?: 0
+        }
 
         val existing = dao.getDailyProgress(habitId, date)
         val currentSeconds = existing?.timerSeconds ?: 0
         val newSeconds = maxOf(0, currentSeconds + additionalSeconds)
 
-        val isCompleted = dailyTarget > 0 && newSeconds >= dailyTarget
+        val isCompleted = if (dailyTarget > 0) newSeconds >= dailyTarget else newSeconds > 0
         val completionState = when {
             isCompleted -> HabitCompletionState.COMPLETED
             newSeconds > 0 -> HabitCompletionState.PARTIALLY_COMPLETED
             else -> HabitCompletionState.MISSED
         }
         val now = now()
+
+        if (existing != null) {
+            dao.updateDailyProgress(
+                existing.copy(
+                    timerSeconds = newSeconds,
+                    completionState = completionState,
+                    completedAt = if (isCompleted) (existing.completedAt ?: now) else null,
+                    updatedAt = now,
+                ),
+            )
+        } else {
+            dao.insertDailyProgress(
+                HabitDailyProgress(
+                    habitId = habitId,
+                    date = date,
+                    completionState = completionState,
+                    timerSeconds = newSeconds,
+                    completedAt = if (isCompleted) now else null,
+                    updatedAt = now,
+                ),
+            )
+        }
+        true
+    }
+
+    suspend fun setTimerProgress(habitId: Long, date: LocalDate, totalSeconds: Int): Boolean = db.withTransaction {
+        val habit = dao.getHabit(habitId) ?: return@withTransaction false
+        if (habit.type != HabitType.TIMER) return@withTransaction false
+
+        val config = dao.getTimerConfig(habitId)
+        val dailyTarget = if ((config?.targetDurationSeconds ?: 0) > 0) {
+            config!!.targetDurationSeconds
+        } else {
+            config?.dailyTargetSeconds ?: 0
+        }
+
+        val newSeconds = maxOf(0, totalSeconds)
+        val isCompleted = if (dailyTarget > 0) newSeconds >= dailyTarget else newSeconds > 0
+        val completionState = when {
+            isCompleted -> HabitCompletionState.COMPLETED
+            newSeconds > 0 -> HabitCompletionState.PARTIALLY_COMPLETED
+            else -> HabitCompletionState.MISSED
+        }
+        val now = now()
+        val existing = dao.getDailyProgress(habitId, date)
 
         if (existing != null) {
             dao.updateDailyProgress(

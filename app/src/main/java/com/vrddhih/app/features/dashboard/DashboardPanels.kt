@@ -1,12 +1,22 @@
 package com.vrddhih.app.features.dashboard
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import com.vrddhih.app.core.data.local.entity.HabitType
+import com.vrddhih.app.core.data.local.entity.NumericDirection
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,21 +37,14 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
-import com.vrddhih.app.core.data.local.entity.HabitType
-import com.vrddhih.app.core.data.local.entity.NumericDirection
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,7 +54,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.res.pluralStringResource
@@ -246,8 +248,9 @@ internal fun UnifiedDailyActivitiesPanel(
     onToggleQuest: (com.vrddhih.app.core.data.quest.QuestOccurrence) -> Unit,
     onToggleHabit: (Long) -> Unit,
     onIncrementHabitNumeric: (Long, Long) -> Unit,
-    onSetHabitNumeric: (Long, Long) -> Unit,
+    onSetHabitNumeric: (Long, Long, Boolean?) -> Unit,
     onLogHabitTimer: (Long, Int) -> Unit,
+    onSetHabitTimer: (Long, Int) -> Unit = { _, _ -> },
     onToggleChecklistItem: (Long, Long, Boolean) -> Unit,
     hasRealQuests: Boolean,
     hasRealHabits: Boolean,
@@ -258,8 +261,13 @@ internal fun UnifiedDailyActivitiesPanel(
     modifier: Modifier = Modifier,
 ) {
     var selectedFilter by remember { mutableStateOf(ActivityFilter.ALL) }
-    var bannerHabitId by remember { mutableStateOf<Long?>(null) }
-    val sortedHabits = remember(habits) { habits.sortedBy { it.isDone } }
+    var numericDialogHabitId by remember { mutableStateOf<Long?>(null) }
+    var timerDialogHabitId by remember { mutableStateOf<Long?>(null) }
+    var checklistDialogHabitId by remember { mutableStateOf<Long?>(null) }
+
+    val activeNumericHabit = habits.find { it.id == numericDialogHabitId }
+    val activeTimerHabit = habits.find { it.id == timerDialogHabitId }
+    val activeChecklistHabit = habits.find { it.id == checklistDialogHabitId }
 
     val totalHabits = if (hasRealHabits) habits.size else uiState.habits.size
     val totalQuests = if (hasRealQuests) occurrences.size else uiState.quests.size
@@ -342,20 +350,34 @@ internal fun UnifiedDailyActivitiesPanel(
                 modifier = Modifier.padding(vertical = VrddhihSpacing.md),
             )
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.xs)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .animateContentSize(),
+                verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.xs),
+            ) {
                 // Real Habits
                 if (showHabits) {
                     if (hasRealHabits) {
+                        val sortedHabits = remember(habits) { habits.sortedBy { it.isDone } }
                         sortedHabits.forEach { habit ->
                             DashboardHabitRow(
                                 habit = habit,
-                                onClick = {
+                                onTap = {
                                     when (habit.type) {
                                         HabitType.YES_NO,
-                                        HabitType.LIMIT -> onToggleHabit(habit.id)
-                                        HabitType.NUMERIC,
-                                        HabitType.TIMER,
-                                        HabitType.CHECKLIST -> bannerHabitId = habit.id
+                                        HabitType.LIMIT -> {
+                                            onToggleHabit(habit.id)
+                                        }
+                                        HabitType.NUMERIC -> {
+                                            numericDialogHabitId = habit.id
+                                        }
+                                        HabitType.TIMER -> {
+                                            timerDialogHabitId = habit.id
+                                        }
+                                        HabitType.CHECKLIST -> {
+                                            checklistDialogHabitId = habit.id
+                                        }
                                     }
                                 },
                             )
@@ -403,16 +425,36 @@ internal fun UnifiedDailyActivitiesPanel(
         }
     }
 
-    // Habit Progress Banner for non-Yes/No habit types
-    val activeHabit = habits.find { it.id == bannerHabitId }
-    if (activeHabit != null) {
-        HabitProgressBannerSheet(
-            habit = activeHabit,
-            onDismiss = { bannerHabitId = null },
-            onSetNumeric = onSetHabitNumeric,
-            onIncrementNumeric = onIncrementHabitNumeric,
-            onLogTimer = onLogHabitTimer,
-            onToggleChecklistItem = onToggleChecklistItem,
+    // Numeric Log Dialog
+    activeNumericHabit?.let { habit ->
+        NumericProgressDialog(
+            habit = habit,
+            onSave = { value, isCompleted ->
+                onSetHabitNumeric(habit.id, value, isCompleted)
+            },
+            onDismiss = { numericDialogHabitId = null },
+        )
+    }
+
+    // Timer Log Dialog
+    activeTimerHabit?.let { habit ->
+        TimerTrackingDialog(
+            habit = habit,
+            onSaveDuration = { totalSecs ->
+                onSetHabitTimer(habit.id, totalSecs)
+            },
+            onDismiss = { timerDialogHabitId = null },
+        )
+    }
+
+    // Checklist Dialog
+    activeChecklistHabit?.let { habit ->
+        ChecklistTrackingDialog(
+            habit = habit,
+            onToggleItem = { itemId, completed ->
+                onToggleChecklistItem(habit.id, itemId, completed)
+            },
+            onDismiss = { checklistDialogHabitId = null },
         )
     }
 }
@@ -452,27 +494,32 @@ private fun ActivityFilterChip(
 @Composable
 private fun DashboardHabitRow(
     habit: DashboardHabitItem,
-    onClick: () -> Unit,
+    onTap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val habitColor = habit.colorArgb?.let { Color(it) } ?: VrddhihColors.Cyan
-    val progressSubtitle = when (habit.type) {
+    val subtitle = when (habit.type) {
+        HabitType.YES_NO, HabitType.LIMIT -> null
         HabitType.NUMERIC -> {
-            "${habit.numericCurrent}/${habit.numericTarget}" +
-                if (habit.numericUnit.isNotBlank()) " ${habit.numericUnit}" else ""
+            val condText = when (habit.numericDirection) {
+                NumericDirection.AT_LEAST -> "≥ ${habit.numericTarget}"
+                NumericDirection.AT_MOST -> "< ${habit.numericTarget}"
+                NumericDirection.EXACTLY -> "= ${habit.numericTarget}"
+                NumericDirection.ANY_VALUE -> "Any"
+            }
+            val unitStr = if (habit.numericUnit.isNotBlank()) " ${habit.numericUnit}" else ""
+            "${habit.numericCurrent} / $condText$unitStr"
         }
         HabitType.TIMER -> {
             val targetMins = habit.timerTargetSeconds / 60
             val elapsedMins = habit.timerElapsedSeconds / 60
-            "${elapsedMins}m / ${targetMins}m"
+            if (targetMins > 0) "${elapsedMins}m / ${targetMins}m" else "${elapsedMins}m"
         }
         HabitType.CHECKLIST -> {
-            val completedCount = habit.checklistItems.count { it.isCompleted }
+            val doneCount = habit.checklistItems.count { it.isCompleted }
             val totalCount = habit.checklistItems.size
-            "$completedCount/$totalCount"
+            "$doneCount / $totalCount items"
         }
-        HabitType.YES_NO,
-        HabitType.LIMIT -> null
     }
 
     Row(
@@ -480,7 +527,7 @@ private fun DashboardHabitRow(
             .fillMaxWidth()
             .heightIn(min = 52.dp)
             .clip(RoundedCornerShape(VrddhihRadii.sm))
-            .clickable(onClick = onClick)
+            .clickable(onClick = onTap)
             .padding(horizontal = VrddhihSpacing.xs, vertical = VrddhihSpacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -497,11 +544,19 @@ private fun DashboardHabitRow(
             )
             Spacer(Modifier.height(VrddhihSpacing.xxs))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                SystemTag(text = "Habit", color = habitColor)
-                if (progressSubtitle != null) {
+                SystemTag(
+                    text = when (habit.type) {
+                        HabitType.NUMERIC -> "Numeric"
+                        HabitType.TIMER -> "Timer"
+                        HabitType.CHECKLIST -> "Checklist"
+                        else -> "Habit"
+                    },
+                    color = habitColor,
+                )
+                if (subtitle != null) {
                     Spacer(Modifier.width(VrddhihSpacing.xs))
                     Text(
-                        text = "•  $progressSubtitle",
+                        text = "•  $subtitle",
                         style = VrddhihTextStyles.NumericSmall,
                         color = if (habit.isDone) VrddhihColors.Success else VrddhihColors.Ice,
                     )
@@ -513,660 +568,396 @@ private fun DashboardHabitRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HabitProgressBannerSheet(
+private fun NumericProgressDialog(
     habit: DashboardHabitItem,
+    onSave: (Long, Boolean?) -> Unit,
     onDismiss: () -> Unit,
-    onSetNumeric: (Long, Long) -> Unit,
-    onIncrementNumeric: (Long, Long) -> Unit,
-    onLogTimer: (Long, Int) -> Unit,
-    onToggleChecklistItem: (Long, Long, Boolean) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val habitColor = habit.colorArgb?.let { Color(it) } ?: VrddhihColors.Cyan
+    var inputVal by remember(habit.id, habit.numericCurrent) {
+        mutableStateOf(habit.numericCurrent.toString())
+    }
+    var markCompleted by remember(habit.id, habit.isDone) {
+        mutableStateOf(habit.isDone)
+    }
 
-    ModalBottomSheet(
+    val goalText = when (habit.numericDirection) {
+        NumericDirection.AT_LEAST ->
+            stringResource(R.string.dashboard_habit_goal_at_least, habit.numericTarget, habit.numericUnit)
+        NumericDirection.AT_MOST ->
+            stringResource(R.string.dashboard_habit_goal_less_than, habit.numericTarget, habit.numericUnit)
+        NumericDirection.EXACTLY ->
+            stringResource(R.string.dashboard_habit_goal_exactly, habit.numericTarget, habit.numericUnit)
+        NumericDirection.ANY_VALUE ->
+            stringResource(R.string.dashboard_habit_goal_any)
+    }
+
+    AlertDialog(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = VrddhihColors.Panel,
-        contentColor = VrddhihColors.TextPrimary,
-        scrimColor = VrddhihColors.Void.copy(alpha = 0.76f),
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .padding(vertical = 12.dp)
-                    .size(width = 36.dp, height = 4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(VrddhihColors.OutlineBright),
+        containerColor = VrddhihColors.PanelRaised,
+        shape = RoundedCornerShape(VrddhihRadii.md),
+        title = {
+            Text(
+                text = habit.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = VrddhihColors.TextPrimary,
             )
         },
-        modifier = modifier,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = VrddhihSpacing.lg)
-                .navigationBarsPadding()
-                .padding(bottom = VrddhihSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.md),
-        ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                HabitCategoryIconBadge(iconKey = habit.iconKey, color = habitColor)
-                Spacer(Modifier.width(VrddhihSpacing.sm))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.dashboard_habit_banner_eyebrow),
-                        style = VrddhihTextStyles.SystemLabel,
-                        color = VrddhihColors.Ice,
-                    )
-                    Text(
-                        text = habit.name,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = VrddhihColors.TextPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Spacer(Modifier.width(VrddhihSpacing.sm))
-                if (habit.isDone) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(VrddhihRadii.xs))
-                            .background(VrddhihColors.Success.copy(alpha = 0.15f))
-                            .border(1.dp, VrddhihColors.Success, RoundedCornerShape(VrddhihRadii.xs))
-                            .padding(horizontal = VrddhihSpacing.xs, vertical = VrddhihSpacing.xxs),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.dashboard_habit_completed_status),
-                            style = VrddhihTextStyles.TagLabel,
-                            color = VrddhihColors.Success,
-                        )
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(VrddhihRadii.xs))
-                            .background(VrddhihColors.Electric.copy(alpha = 0.15f))
-                            .border(1.dp, VrddhihColors.Electric, RoundedCornerShape(VrddhihRadii.xs))
-                            .padding(horizontal = VrddhihSpacing.xs, vertical = VrddhihSpacing.xxs),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.dashboard_habit_in_progress_status),
-                            style = VrddhihTextStyles.TagLabel,
-                            color = VrddhihColors.Electric,
-                        )
-                    }
-                }
-            }
-
-            // Body
-            when (habit.type) {
-                HabitType.NUMERIC -> {
-                    NumericBannerContent(
-                        habit = habit,
-                        onIncrement = { delta -> onIncrementNumeric(habit.id, delta) },
-                        onSet = { value -> onSetNumeric(habit.id, value) },
-                    )
-                }
-                HabitType.TIMER -> {
-                    TimerBannerContent(
-                        habit = habit,
-                        onLogTimer = { secs -> onLogTimer(habit.id, secs) },
-                    )
-                }
-                HabitType.CHECKLIST -> {
-                    ChecklistBannerContent(
-                        habit = habit,
-                        onToggleItem = { itemId, completed -> onToggleChecklistItem(habit.id, itemId, completed) },
-                    )
-                }
-                HabitType.YES_NO,
-                HabitType.LIMIT -> Unit
-            }
-
-            // Bottom action: Done button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(VrddhihRadii.md))
-                    .background(VrddhihColors.PanelRaised)
-                    .border(1.dp, VrddhihColors.OutlineBright, RoundedCornerShape(VrddhihRadii.md))
-                    .clickable(onClick = onDismiss),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.dashboard_habit_done_action),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = VrddhihColors.TextPrimary,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun NumericBannerContent(
-    habit: DashboardHabitItem,
-    onIncrement: (Long) -> Unit,
-    onSet: (Long) -> Unit,
-) {
-    val step = habit.numericIncrement.coerceAtLeast(1L)
-    val target = habit.numericTarget.coerceAtLeast(1L)
-    val current = habit.numericCurrent
-    val progress = (current.toFloat() / target.toFloat()).coerceIn(0f, 1f)
-    var textInput by remember(habit.id, current) { mutableStateOf(current.toString()) }
-
-    val targetText = when (habit.numericDirection) {
-        NumericDirection.AT_LEAST -> stringResource(R.string.dashboard_habit_target_at_least, target, habit.numericUnit)
-        NumericDirection.AT_MOST -> stringResource(R.string.dashboard_habit_target_at_most, target, habit.numericUnit)
-        NumericDirection.EXACTLY -> stringResource(R.string.dashboard_habit_target_exactly, target, habit.numericUnit)
-        NumericDirection.ANY_VALUE -> stringResource(R.string.dashboard_habit_target_any, habit.numericUnit)
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm)) {
-        Text(
-            text = targetText,
-            style = MaterialTheme.typography.bodySmall,
-            color = VrddhihColors.TextSecondary,
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    text = "$current",
-                    style = VrddhihTextStyles.NumericLarge,
-                    color = if (habit.isDone) VrddhihColors.Success else VrddhihColors.Ice,
-                )
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    text = "/ $target ${habit.numericUnit}".trim(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = VrddhihColors.TextMuted,
-                    modifier = Modifier.padding(bottom = 2.dp),
-                )
-            }
-            if (habit.isDone) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.CheckCircle,
-                        contentDescription = null,
-                        tint = VrddhihColors.Success,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(R.string.dashboard_habit_completed_status),
-                        style = VrddhihTextStyles.TagLabel,
-                        color = VrddhihColors.Success,
-                    )
-                }
-            }
-        }
-
-        SystemProgressBar(
-            progress = progress,
-            height = 8.dp,
-            brush = if (habit.isDone) SolidColor(VrddhihColors.Success) else VrddhihBrushes.Energy,
-        )
-
-        Spacer(Modifier.height(VrddhihSpacing.xs))
-
-        // Stepper: [-step] [+step]
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp)
-                    .clip(RoundedCornerShape(VrddhihRadii.sm))
-                    .background(VrddhihColors.PanelRaised)
-                    .border(1.dp, VrddhihColors.OutlineBright, RoundedCornerShape(VrddhihRadii.sm))
-                    .clickable { onIncrement(-step) },
-                contentAlignment = Alignment.Center,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Remove, contentDescription = "Decrease", tint = VrddhihColors.TextPrimary, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("-$step", style = MaterialTheme.typography.labelMedium, color = VrddhihColors.TextPrimary)
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp)
-                    .clip(RoundedCornerShape(VrddhihRadii.sm))
-                    .background(VrddhihColors.Electric.copy(alpha = 0.2f))
-                    .border(1.dp, VrddhihColors.Electric, RoundedCornerShape(VrddhihRadii.sm))
-                    .clickable { onIncrement(step) },
-                contentAlignment = Alignment.Center,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Add, contentDescription = "Increase", tint = VrddhihColors.Electric, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("+$step", style = MaterialTheme.typography.labelMedium, color = VrddhihColors.Electric)
-                }
-            }
-        }
-
-        // Direct input & Set
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            OutlinedTextField(
-                value = textInput,
-                onValueChange = { textInput = it.filter { ch -> ch.isDigit() } },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = VrddhihColors.Electric,
-                    unfocusedBorderColor = VrddhihColors.OutlineBright,
-                    focusedTextColor = VrddhihColors.TextPrimary,
-                    unfocusedTextColor = VrddhihColors.TextPrimary,
-                ),
-            )
-            Box(
-                modifier = Modifier
-                    .height(52.dp)
-                    .clip(RoundedCornerShape(VrddhihRadii.sm))
-                    .background(VrddhihColors.Electric)
-                    .clickable {
-                        val num = textInput.toLongOrNull() ?: 0L
-                        onSet(num)
-                    }
-                    .padding(horizontal = VrddhihSpacing.md),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.dashboard_habit_set_action),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = VrddhihColors.Void,
-                )
-            }
-        }
-
-        // Quick action: Complete Target or Reset
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm),
-        ) {
-            if (!habit.isDone) {
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm)) {
+                // Configured goal & evaluation condition
                 Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp)
-                        .clip(RoundedCornerShape(VrddhihRadii.xs))
-                        .background(VrddhihColors.Success.copy(alpha = 0.15f))
-                        .border(1.dp, VrddhihColors.Success, RoundedCornerShape(VrddhihRadii.xs))
-                        .clickable { onSet(target) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.dashboard_habit_complete_target),
-                        style = VrddhihTextStyles.TagLabel,
-                        color = VrddhihColors.Success,
-                    )
-                }
-            }
-            if (current > 0) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp)
-                        .clip(RoundedCornerShape(VrddhihRadii.xs))
-                        .background(VrddhihColors.PanelRaised)
-                        .border(1.dp, VrddhihColors.Outline, RoundedCornerShape(VrddhihRadii.xs))
-                        .clickable { onSet(0L) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.dashboard_habit_reset_progress),
-                        style = VrddhihTextStyles.TagLabel,
-                        color = VrddhihColors.TextMuted,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TimerBannerContent(
-    habit: DashboardHabitItem,
-    onLogTimer: (Int) -> Unit,
-) {
-    val targetMins = habit.timerTargetSeconds / 60
-    val elapsedMins = habit.timerElapsedSeconds / 60
-    val progress = if (habit.timerTargetSeconds > 0) {
-        (habit.timerElapsedSeconds.toFloat() / habit.timerTargetSeconds.toFloat()).coerceIn(0f, 1f)
-    } else 0f
-    var customMinutesInput by remember(habit.id) { mutableStateOf("15") }
-
-    Column(verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm)) {
-        Text(
-            text = stringResource(R.string.dashboard_habit_enter_minutes) + " (Target: ${targetMins}m)",
-            style = MaterialTheme.typography.bodySmall,
-            color = VrddhihColors.TextSecondary,
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    text = "${elapsedMins}m",
-                    style = VrddhihTextStyles.NumericLarge,
-                    color = if (habit.isDone) VrddhihColors.Success else VrddhihColors.Ice,
-                )
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    text = "/ ${targetMins}m",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = VrddhihColors.TextMuted,
-                    modifier = Modifier.padding(bottom = 2.dp),
-                )
-            }
-            if (habit.isDone) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.CheckCircle,
-                        contentDescription = null,
-                        tint = VrddhihColors.Success,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(R.string.dashboard_habit_completed_status),
-                        style = VrddhihTextStyles.TagLabel,
-                        color = VrddhihColors.Success,
-                    )
-                }
-            }
-        }
-
-        SystemProgressBar(
-            progress = progress,
-            height = 8.dp,
-            brush = if (habit.isDone) SolidColor(VrddhihColors.Success) else VrddhihBrushes.Energy,
-        )
-
-        Spacer(Modifier.height(VrddhihSpacing.xs))
-
-        // Quick log chips
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.xs),
-        ) {
-            QuickLogChip(label = "+5m", onClick = { onLogTimer(300) }, modifier = Modifier.weight(1f))
-            QuickLogChip(label = "+15m", onClick = { onLogTimer(900) }, modifier = Modifier.weight(1f))
-            QuickLogChip(label = "+30m", onClick = { onLogTimer(1800) }, modifier = Modifier.weight(1f))
-            QuickLogChip(label = "+60m", onClick = { onLogTimer(3600) }, modifier = Modifier.weight(1f))
-        }
-
-        // Custom minutes input
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            OutlinedTextField(
-                value = customMinutesInput,
-                onValueChange = { customMinutesInput = it.filter { ch -> ch.isDigit() } },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                placeholder = { Text(stringResource(R.string.dashboard_habit_enter_minutes)) },
-                modifier = Modifier.weight(1f),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = VrddhihColors.Electric,
-                    unfocusedBorderColor = VrddhihColors.OutlineBright,
-                    focusedTextColor = VrddhihColors.TextPrimary,
-                    unfocusedTextColor = VrddhihColors.TextPrimary,
-                ),
-            )
-            Box(
-                modifier = Modifier
-                    .height(52.dp)
-                    .clip(RoundedCornerShape(VrddhihRadii.sm))
-                    .background(VrddhihColors.Electric)
-                    .clickable {
-                        val mins = customMinutesInput.toIntOrNull() ?: 0
-                        if (mins > 0) {
-                            onLogTimer(mins * 60)
-                        }
-                    }
-                    .padding(horizontal = VrddhihSpacing.md),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.dashboard_habit_log_time),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = VrddhihColors.Void,
-                )
-            }
-        }
-
-        // Complete Target / Reset
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm),
-        ) {
-            if (!habit.isDone) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp)
-                        .clip(RoundedCornerShape(VrddhihRadii.xs))
-                        .background(VrddhihColors.Success.copy(alpha = 0.15f))
-                        .border(1.dp, VrddhihColors.Success, RoundedCornerShape(VrddhihRadii.xs))
-                        .clickable {
-                            val remaining = (habit.timerTargetSeconds - habit.timerElapsedSeconds).coerceAtLeast(0)
-                            if (remaining > 0) {
-                                onLogTimer(remaining)
-                            }
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.dashboard_habit_complete_target),
-                        style = VrddhihTextStyles.TagLabel,
-                        color = VrddhihColors.Success,
-                    )
-                }
-            }
-            if (habit.timerElapsedSeconds > 0) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp)
-                        .clip(RoundedCornerShape(VrddhihRadii.xs))
-                        .background(VrddhihColors.PanelRaised)
-                        .border(1.dp, VrddhihColors.Outline, RoundedCornerShape(VrddhihRadii.xs))
-                        .clickable { onLogTimer(-habit.timerElapsedSeconds) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.dashboard_habit_reset_progress),
-                        style = VrddhihTextStyles.TagLabel,
-                        color = VrddhihColors.TextMuted,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun QuickLogChip(
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isPrimary: Boolean = false,
-) {
-    val shape = RoundedCornerShape(VrddhihRadii.xs)
-    val bg = if (isPrimary) VrddhihColors.Electric.copy(alpha = 0.2f) else VrddhihColors.PanelRaised
-    val border = if (isPrimary) VrddhihColors.Electric else VrddhihColors.OutlineBright
-    val textColor = if (isPrimary) VrddhihColors.Electric else VrddhihColors.TextPrimary
-
-    Box(
-        modifier = modifier
-            .height(32.dp)
-            .clip(shape)
-            .background(bg)
-            .border(1.dp, border, shape)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text = label, style = VrddhihTextStyles.TagLabel, color = textColor)
-    }
-}
-
-@Composable
-private fun ChecklistBannerContent(
-    habit: DashboardHabitItem,
-    onToggleItem: (Long, Boolean) -> Unit,
-) {
-    val completedCount = habit.checklistItems.count { it.isCompleted }
-    val totalCount = habit.checklistItems.size
-    val progress = if (totalCount > 0) completedCount.toFloat() / totalCount.toFloat() else 0f
-
-    Column(verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            Text(
-                text = stringResource(R.string.dashboard_habit_checklist_progress, completedCount, totalCount),
-                style = VrddhihTextStyles.NumericSmall,
-                color = if (habit.isDone) VrddhihColors.Success else VrddhihColors.Ice,
-            )
-            if (habit.isDone) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.CheckCircle,
-                        contentDescription = null,
-                        tint = VrddhihColors.Success,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(R.string.dashboard_habit_checklist_all_done),
-                        style = VrddhihTextStyles.TagLabel,
-                        color = VrddhihColors.Success,
-                    )
-                }
-            }
-        }
-
-        SystemProgressBar(
-            progress = progress,
-            height = 8.dp,
-            brush = if (habit.isDone) SolidColor(VrddhihColors.Success) else VrddhihBrushes.Energy,
-        )
-
-        Spacer(Modifier.height(VrddhihSpacing.xs))
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(VrddhihRadii.sm))
-                .background(VrddhihColors.PanelRaised)
-                .padding(VrddhihSpacing.sm),
-            verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.xs),
-        ) {
-            habit.checklistItems.forEach { item ->
-                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(VrddhihRadii.xs))
-                        .clickable { onToggleItem(item.id, !item.isCompleted) }
-                        .padding(horizontal = VrddhihSpacing.xs, vertical = VrddhihSpacing.xs),
-                    verticalAlignment = Alignment.CenterVertically,
+                        .background(VrddhihColors.Void)
+                        .padding(horizontal = VrddhihSpacing.sm, vertical = VrddhihSpacing.xs),
                 ) {
-                    QuestCheck(checked = item.isCompleted)
-                    Spacer(Modifier.width(VrddhihSpacing.sm))
                     Text(
-                        text = item.title,
+                        text = goalText,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (item.isCompleted) VrddhihColors.TextMuted else VrddhihColors.TextPrimary,
-                        textDecoration = if (item.isCompleted) TextDecoration.LineThrough else null,
-                        modifier = Modifier.weight(1f),
+                        color = VrddhihColors.Ice,
                     )
                 }
-            }
-        }
 
-        // Quick action: Check All or Reset All
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm),
-        ) {
-            if (!habit.isDone) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp)
-                        .clip(RoundedCornerShape(VrddhihRadii.xs))
-                        .background(VrddhihColors.Success.copy(alpha = 0.15f))
-                        .border(1.dp, VrddhihColors.Success, RoundedCornerShape(VrddhihRadii.xs))
-                        .clickable {
-                            habit.checklistItems.filter { !it.isCompleted }.forEach { item ->
-                                onToggleItem(item.id, true)
-                            }
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.dashboard_habit_checklist_check_all),
-                        style = VrddhihTextStyles.TagLabel,
-                        color = VrddhihColors.Success,
-                    )
+                // Current recorded value
+                Text(
+                    text = stringResource(
+                        R.string.dashboard_habit_current_progress,
+                        habit.numericCurrent,
+                        habit.numericUnit,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = VrddhihColors.TextSecondary,
+                )
+
+                // Input field
+                OutlinedTextField(
+                    value = inputVal,
+                    onValueChange = { inputVal = it.filter { ch -> ch.isDigit() } },
+                    label = { Text(stringResource(R.string.dashboard_habit_enter_value)) },
+                    suffix = if (habit.numericUnit.isNotBlank()) {
+                        { Text(habit.numericUnit, color = VrddhihColors.TextMuted) }
+                    } else null,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                // For ANY_VALUE: explicit completion checkbox
+                if (habit.numericDirection == NumericDirection.ANY_VALUE) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(VrddhihRadii.xs))
+                            .clickable { markCompleted = !markCompleted }
+                            .padding(vertical = VrddhihSpacing.xs),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        QuestCheck(checked = markCompleted)
+                        Spacer(Modifier.width(VrddhihSpacing.sm))
+                        Text(
+                            text = stringResource(R.string.dashboard_habit_mark_completed),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = VrddhihColors.TextPrimary,
+                        )
+                    }
                 }
             }
-            if (completedCount > 0) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp)
-                        .clip(RoundedCornerShape(VrddhihRadii.xs))
-                        .background(VrddhihColors.PanelRaised)
-                        .border(1.dp, VrddhihColors.Outline, RoundedCornerShape(VrddhihRadii.xs))
-                        .clickable {
-                            habit.checklistItems.filter { it.isCompleted }.forEach { item ->
-                                onToggleItem(item.id, false)
-                            }
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.dashboard_habit_checklist_reset_all),
-                        style = VrddhihTextStyles.TagLabel,
-                        color = VrddhihColors.TextMuted,
-                    )
-                }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val num = inputVal.toLongOrNull() ?: 0L
+                    val isComp = if (habit.numericDirection == NumericDirection.ANY_VALUE) markCompleted else null
+                    onSave(num, isComp)
+                    onDismiss()
+                },
+            ) {
+                Text(stringResource(R.string.action_save), color = VrddhihColors.Electric)
             }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.habits_cancel_action), color = VrddhihColors.TextMuted)
+            }
+        },
+    )
+}
+
+@Composable
+private fun TimerTrackingDialog(
+    habit: DashboardHabitItem,
+    onSaveDuration: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var timerRunning by remember { mutableStateOf(false) }
+    var sessionSeconds by remember { mutableStateOf(0) }
+    var manualMinutesInput by remember { mutableStateOf("") }
+
+    LaunchedEffect(timerRunning) {
+        while (isActive && timerRunning) {
+            delay(1000L)
+            sessionSeconds++
         }
     }
+
+    val targetMins = habit.timerTargetSeconds / 60
+    val recordedMins = habit.timerElapsedSeconds / 60
+    val totalSeconds = habit.timerElapsedSeconds + sessionSeconds
+    val formattedSessionTime = remember(sessionSeconds) {
+        val m = sessionSeconds / 60
+        val s = sessionSeconds % 60
+        String.format(java.util.Locale.getDefault(), "%02d:%02d", m, s)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = VrddhihColors.PanelRaised,
+        shape = RoundedCornerShape(VrddhihRadii.md),
+        title = {
+            Text(
+                text = habit.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = VrddhihColors.TextPrimary,
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // Target and today's progress banner
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(VrddhihRadii.xs))
+                        .background(VrddhihColors.Void)
+                        .padding(horizontal = VrddhihSpacing.sm, vertical = VrddhihSpacing.xs),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.xxs)) {
+                        if (targetMins > 0) {
+                            Text(
+                                text = stringResource(R.string.dashboard_timer_target_label, "${targetMins}m"),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = VrddhihColors.Ice,
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.dashboard_timer_recorded_today, "${recordedMins}m"),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = VrddhihColors.TextSecondary,
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(VrddhihSpacing.xs))
+
+                // Digital Timer Readout
+                Text(
+                    text = formattedSessionTime,
+                    style = VrddhihTextStyles.NumericLarge,
+                    color = if (timerRunning) VrddhihColors.Electric else VrddhihColors.TextPrimary,
+                )
+                Text(
+                    text = stringResource(R.string.dashboard_timer_session_elapsed),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = VrddhihColors.TextMuted,
+                )
+
+                Spacer(Modifier.height(VrddhihSpacing.xs))
+
+                // Controls: Start, Pause, Resume, Finish
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.xs),
+                ) {
+                    if (!timerRunning && sessionSeconds == 0) {
+                        Button(
+                            onClick = { timerRunning = true },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = VrddhihColors.Electric),
+                            shape = RoundedCornerShape(VrddhihRadii.sm),
+                        ) {
+                            Text(stringResource(R.string.dashboard_timer_start), color = VrddhihColors.Void)
+                        }
+                    } else if (timerRunning) {
+                        Button(
+                            onClick = { timerRunning = false },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = VrddhihColors.Ice),
+                            shape = RoundedCornerShape(VrddhihRadii.sm),
+                        ) {
+                            Text(stringResource(R.string.dashboard_timer_pause), color = VrddhihColors.Void)
+                        }
+                        Button(
+                            onClick = {
+                                timerRunning = false
+                                onSaveDuration(totalSeconds)
+                                onDismiss()
+                            },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = VrddhihColors.Success),
+                            shape = RoundedCornerShape(VrddhihRadii.sm),
+                        ) {
+                            Text(stringResource(R.string.dashboard_timer_finish), color = VrddhihColors.TextPrimary)
+                        }
+                    } else {
+                        Button(
+                            onClick = { timerRunning = true },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = VrddhihColors.Electric),
+                            shape = RoundedCornerShape(VrddhihRadii.sm),
+                        ) {
+                            Text(stringResource(R.string.dashboard_timer_resume), color = VrddhihColors.Void)
+                        }
+                        Button(
+                            onClick = {
+                                onSaveDuration(totalSeconds)
+                                onDismiss()
+                            },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = VrddhihColors.Success),
+                            shape = RoundedCornerShape(VrddhihRadii.sm),
+                        ) {
+                            Text(stringResource(R.string.dashboard_timer_finish), color = VrddhihColors.TextPrimary)
+                        }
+                    }
+                }
+
+                if (!timerRunning && sessionSeconds == 0) {
+                    Spacer(Modifier.height(VrddhihSpacing.xs))
+                    OutlinedTextField(
+                        value = manualMinutesInput,
+                        onValueChange = { manualMinutesInput = it.filter { ch -> ch.isDigit() } },
+                        label = { Text(stringResource(R.string.dashboard_timer_manual_entry)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            if (!timerRunning && sessionSeconds == 0 && manualMinutesInput.isNotBlank()) {
+                TextButton(
+                    onClick = {
+                        val enteredMins = manualMinutesInput.toIntOrNull() ?: 0
+                        if (enteredMins > 0) {
+                            onSaveDuration(habit.timerElapsedSeconds + (enteredMins * 60))
+                        }
+                        onDismiss()
+                    },
+                ) {
+                    Text(stringResource(R.string.action_save), color = VrddhihColors.Electric)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.habits_cancel_action), color = VrddhihColors.TextMuted)
+            }
+        },
+    )
+}
+
+@Composable
+private fun ChecklistTrackingDialog(
+    habit: DashboardHabitItem,
+    onToggleItem: (Long, Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val completedCount = habit.checklistItems.count { it.isCompleted }
+    val totalCount = habit.checklistItems.size
+    val progress = if (totalCount > 0) completedCount.toFloat() / totalCount else 0f
+    val allDone = totalCount > 0 && completedCount == totalCount
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = VrddhihColors.PanelRaised,
+        shape = RoundedCornerShape(VrddhihRadii.md),
+        title = {
+            Text(
+                text = habit.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = VrddhihColors.TextPrimary,
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm),
+            ) {
+                // Progress summary banner
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(VrddhihRadii.xs))
+                        .background(VrddhihColors.Void)
+                        .padding(horizontal = VrddhihSpacing.sm, vertical = VrddhihSpacing.xs),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.xxs)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.dashboard_checklist_progress_detail, completedCount, totalCount),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (allDone) VrddhihColors.Success else VrddhihColors.Ice,
+                            )
+                            if (allDone) {
+                                SystemTag(text = stringResource(R.string.dashboard_checklist_all_done), color = VrddhihColors.Success)
+                            }
+                        }
+                        Spacer(Modifier.height(VrddhihSpacing.xxs))
+                        SystemProgressBar(progress = progress, height = 4.dp)
+                    }
+                }
+
+                Spacer(Modifier.height(VrddhihSpacing.xxs))
+
+                // Checklist items
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 280.dp),
+                    verticalArrangement = Arrangement.spacedBy(VrddhihSpacing.xxs),
+                ) {
+                    items(habit.checklistItems, key = { it.id }) { item ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 48.dp)
+                                .clip(RoundedCornerShape(VrddhihRadii.xs))
+                                .clickable { onToggleItem(item.id, !item.isCompleted) }
+                                .padding(horizontal = VrddhihSpacing.xs, vertical = VrddhihSpacing.xs),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            QuestCheck(checked = item.isCompleted)
+                            Spacer(Modifier.width(VrddhihSpacing.sm))
+                            Text(
+                                text = item.title,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (item.isCompleted) VrddhihColors.TextMuted else VrddhihColors.TextPrimary,
+                                textDecoration = if (item.isCompleted) TextDecoration.LineThrough else null,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_done), color = VrddhihColors.Electric)
+            }
+        },
+    )
 }
 
 @Composable
