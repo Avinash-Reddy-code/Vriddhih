@@ -120,13 +120,13 @@ class DashboardViewModel(
                                         com.vrddhih.app.core.data.local.entity.NumericDirection.AT_LEAST -> current >= target
                                         com.vrddhih.app.core.data.local.entity.NumericDirection.AT_MOST -> current in 1..target
                                         com.vrddhih.app.core.data.local.entity.NumericDirection.EXACTLY -> current == target
-                                        com.vrddhih.app.core.data.local.entity.NumericDirection.ANY_VALUE -> current > 0
+                                        com.vrddhih.app.core.data.local.entity.NumericDirection.ANY_VALUE -> daily?.completedAt != null
                                     }
                                 }
                                 com.vrddhih.app.core.data.local.entity.HabitType.TIMER -> {
                                     val target = habitWithConfigs.timerConfig?.targetDurationSeconds ?: 0
                                     val elapsed = daily?.timerSeconds ?: 0
-                                    target > 0 && elapsed >= target
+                                    daily?.completedAt != null || (target > 0 && elapsed >= target)
                                 }
                                 com.vrddhih.app.core.data.local.entity.HabitType.CHECKLIST -> {
                                     items.isNotEmpty() && items.all { it.isCompleted }
@@ -305,11 +305,20 @@ class DashboardViewModel(
     }
 
     /** Sets the exact numeric habit value for the selected date. */
-    fun setHabitNumeric(habitId: Long, value: Long) {
+    fun setHabitNumeric(habitId: Long, value: Long, isExplicitCompleted: Boolean? = null) {
         val repo = habitRepository ?: return
         viewModelScope.launch {
             val date = dateState.value.selectedDate
-            repo.updateNumericProgress(habitId, date, value.coerceAtLeast(0L))
+            repo.updateNumericProgress(habitId, date, value.coerceAtLeast(0L), isExplicitCompleted)
+        }
+    }
+
+    /** Sets the recorded timer duration for a timer habit on the selected date. */
+    fun setHabitTimer(habitId: Long, totalSeconds: Int, isExplicitCompleted: Boolean? = null) {
+        val repo = habitRepository ?: return
+        viewModelScope.launch {
+            val date = dateState.value.selectedDate
+            repo.setTimerSeconds(habitId, date, totalSeconds, isExplicitCompleted)
         }
     }
 

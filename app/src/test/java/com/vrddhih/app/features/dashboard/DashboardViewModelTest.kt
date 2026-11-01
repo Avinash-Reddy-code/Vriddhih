@@ -380,6 +380,205 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun numericHabit_evaluationConditions_atMost_and_exactly() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, VrddhihDatabase::class.java)
+            .allowMainThreadQueries()
+            .addCallback(VrddhihDatabase.SEED_CALLBACK)
+            .build()
+        val habitRepo = HabitRepository(db, clock)
+
+        val viewModel = DashboardViewModel(
+            observeDayActivity = { flowOf(emptyDay) },
+            currentDate = { today },
+            habitRepository = habitRepo,
+        )
+        collectHabits(viewModel)
+
+        // LESS THAN / AT MOST: target 30. 25 is done, 35 is not done.
+        val atMostHabitId = habitRepo.createHabit(
+            name = "Screen Time",
+            type = HabitType.NUMERIC,
+            scheduleType = HabitScheduleType.DAILY,
+            startDate = today,
+        )
+        habitRepo.setNumericConfig(
+            habitId = atMostHabitId,
+            targetValue = 30,
+            unit = "minutes",
+            direction = com.vrddhih.app.core.data.local.entity.NumericDirection.AT_MOST,
+            incrementValue = 5,
+        )
+
+        viewModel.setHabitNumeric(atMostHabitId, 25)
+        val atMostStep1 = viewModel.habits.first { it.any { h -> h.id == atMostHabitId && h.numericCurrent == 25L } }
+            .first { it.id == atMostHabitId }
+        assertTrue(atMostStep1.isDone)
+
+        viewModel.setHabitNumeric(atMostHabitId, 35)
+        val atMostStep2 = viewModel.habits.first { it.any { h -> h.id == atMostHabitId && h.numericCurrent == 35L } }
+            .first { it.id == atMostHabitId }
+        assertFalse(atMostStep2.isDone)
+
+        // EXACTLY: target 30. 30 is done, 25 is not done.
+        val exactlyHabitId = habitRepo.createHabit(
+            name = "Pushups",
+            type = HabitType.NUMERIC,
+            scheduleType = HabitScheduleType.DAILY,
+            startDate = today,
+        )
+        habitRepo.setNumericConfig(
+            habitId = exactlyHabitId,
+            targetValue = 30,
+            unit = "reps",
+            direction = com.vrddhih.app.core.data.local.entity.NumericDirection.EXACTLY,
+            incrementValue = 1,
+        )
+
+        viewModel.setHabitNumeric(exactlyHabitId, 25)
+        val exactlyStep1 = viewModel.habits.first { it.any { h -> h.id == exactlyHabitId && h.numericCurrent == 25L } }
+            .first { it.id == exactlyHabitId }
+        assertFalse(exactlyStep1.isDone)
+
+        viewModel.setHabitNumeric(exactlyHabitId, 30)
+        val exactlyStep2 = viewModel.habits.first { it.any { h -> h.id == exactlyHabitId && h.numericCurrent == 30L } }
+            .first { it.id == exactlyHabitId }
+        assertTrue(exactlyStep2.isDone)
+
+        db.close()
+    }
+
+    @Test
+    fun numericHabit_anyValue_explicitCompletionToggles() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, VrddhihDatabase::class.java)
+            .allowMainThreadQueries()
+            .addCallback(VrddhihDatabase.SEED_CALLBACK)
+            .build()
+        val habitRepo = HabitRepository(db, clock)
+
+        val viewModel = DashboardViewModel(
+            observeDayActivity = { flowOf(emptyDay) },
+            currentDate = { today },
+            habitRepository = habitRepo,
+        )
+        collectHabits(viewModel)
+
+        val habitId = habitRepo.createHabit(
+            name = "Journaling",
+            type = HabitType.NUMERIC,
+            scheduleType = HabitScheduleType.DAILY,
+            startDate = today,
+        )
+        habitRepo.setNumericConfig(
+            habitId = habitId,
+            targetValue = 0,
+            unit = "words",
+            direction = com.vrddhih.app.core.data.local.entity.NumericDirection.ANY_VALUE,
+            incrementValue = 50,
+        )
+
+        // Record value without explicit completion
+        viewModel.setHabitNumeric(habitId, 150, isExplicitCompleted = false)
+        val step1 = viewModel.habits.first { it.any { h -> h.id == habitId && h.numericCurrent == 150L } }
+            .first { it.id == habitId }
+        assertEquals(150L, step1.numericCurrent)
+        assertFalse(step1.isDone)
+
+        // Record value with explicit completion
+        viewModel.setHabitNumeric(habitId, 200, isExplicitCompleted = true)
+        val step2 = viewModel.habits.first { it.any { h -> h.id == habitId && h.numericCurrent == 200L } }
+            .first { it.id == habitId }
+        assertEquals(200L, step2.numericCurrent)
+        assertTrue(step2.isDone)
+
+        db.close()
+    }
+
+    @Test
+    fun timerHabit_setHabitTimer_finishesAndCompletes() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, VrddhihDatabase::class.java)
+            .allowMainThreadQueries()
+            .addCallback(VrddhihDatabase.SEED_CALLBACK)
+            .build()
+        val habitRepo = HabitRepository(db, clock)
+
+        val viewModel = DashboardViewModel(
+            observeDayActivity = { flowOf(emptyDay) },
+            currentDate = { today },
+            habitRepository = habitRepo,
+        )
+        collectHabits(viewModel)
+
+        val habitId = habitRepo.createHabit(
+            name = "Meditation",
+            type = HabitType.TIMER,
+            scheduleType = HabitScheduleType.DAILY,
+            startDate = today,
+        )
+        habitRepo.setTimerConfig(
+            habitId = habitId,
+            targetDurationSeconds = 1200, // 20 min
+            dailyTargetSeconds = 1200,
+        )
+
+        // Set 600s -> not done
+        viewModel.setHabitTimer(habitId, 600)
+        val step1 = viewModel.habits.first { it.any { h -> h.id == habitId && h.timerElapsedSeconds == 600 } }
+            .first { it.id == habitId }
+        assertFalse(step1.isDone)
+
+        // Set 1200s -> done
+        viewModel.setHabitTimer(habitId, 1200)
+        val step2 = viewModel.habits.first { it.any { h -> h.id == habitId && h.timerElapsedSeconds == 1200 } }
+            .first { it.id == habitId }
+        assertTrue(step2.isDone)
+
+        db.close()
+    }
+
+    @Test
+    fun dashboardPresentation_completedHabitsSortBelowIncompleteHabits() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, VrddhihDatabase::class.java)
+            .allowMainThreadQueries()
+            .addCallback(VrddhihDatabase.SEED_CALLBACK)
+            .build()
+        val habitRepo = HabitRepository(db, clock)
+
+        val viewModel = DashboardViewModel(
+            observeDayActivity = { flowOf(emptyDay) },
+            currentDate = { today },
+            habitRepository = habitRepo,
+        )
+        collectHabits(viewModel)
+
+        val h1 = habitRepo.createHabit(name = "Habit A", type = HabitType.YES_NO, scheduleType = HabitScheduleType.DAILY, startDate = today)
+        val h2 = habitRepo.createHabit(name = "Habit B", type = HabitType.YES_NO, scheduleType = HabitScheduleType.DAILY, startDate = today)
+        val h3 = habitRepo.createHabit(name = "Habit C", type = HabitType.YES_NO, scheduleType = HabitScheduleType.DAILY, startDate = today)
+
+        // Initially all incomplete
+        val initialList = viewModel.habits.first { it.size == 3 }
+        val sortedInitial = initialList.sortedBy { it.isDone }
+        assertEquals(listOf("Habit A", "Habit B", "Habit C"), sortedInitial.map { it.name })
+
+        // Mark Habit A as done -> Habit A moves to the bottom, B and C stay at top
+        viewModel.toggleHabit(h1)
+        val step1List = viewModel.habits.first { it.firstOrNull { h -> h.id == h1 }?.isDone == true }
+        val sortedStep1 = step1List.sortedBy { it.isDone }
+        assertEquals(listOf("Habit B", "Habit C", "Habit A"), sortedStep1.map { it.name })
+
+        // Mark Habit B as done -> Habit B moves below C, before A (preserving completed order)
+        viewModel.toggleHabit(h2)
+        val step2List = viewModel.habits.first { it.firstOrNull { h -> h.id == h2 }?.isDone == true }
+        val sortedStep2 = step2List.sortedBy { it.isDone }
+        assertEquals(listOf("Habit C", "Habit A", "Habit B"), sortedStep2.map { it.name })
+
+        db.close()
+    }
+
+    @Test
     fun realGoals_observedWithProgressOnDashboard() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val db = Room.inMemoryDatabaseBuilder(context, VrddhihDatabase::class.java)
