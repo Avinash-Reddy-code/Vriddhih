@@ -48,6 +48,7 @@ import com.vrddhih.app.core.theme.VrddhihDimens
 import com.vrddhih.app.core.theme.VrddhihRadii
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
+import com.vrddhih.app.core.ui.components.CuteCategoryBadge
 import com.vrddhih.app.core.ui.components.SystemPanel
 import com.vrddhih.app.core.ui.components.SystemTag
 import java.time.LocalDate
@@ -104,6 +105,14 @@ fun QuestItemRow(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    if (category != null) {
+                        CuteCategoryBadge(
+                            category = category,
+                            size = 24.dp,
+                            iconSize = 13.dp,
+                        )
+                        Spacer(Modifier.width(VrddhihSpacing.xs))
+                    }
                     Text(
                         text = occurrence.title,
                         style = MaterialTheme.typography.titleMedium,

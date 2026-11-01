@@ -82,6 +82,9 @@ interface HabitDao {
     @Query("SELECT * FROM habit_daily_progress WHERE habit_id = :habitId AND date BETWEEN :start AND :end ORDER BY date")
     fun observeDailyProgressBetween(habitId: Long, start: LocalDate, end: LocalDate): Flow<List<HabitDailyProgress>>
 
+    @Query("SELECT * FROM habit_daily_progress WHERE date BETWEEN :start AND :end ORDER BY date")
+    fun observeAllDailyProgressBetween(start: LocalDate, end: LocalDate): Flow<List<HabitDailyProgress>>
+
     @Query("DELETE FROM habit_daily_progress WHERE habit_id = :habitId AND date = :date")
     suspend fun deleteDailyProgress(habitId: Long, date: LocalDate): Int
 

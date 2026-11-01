@@ -28,19 +28,20 @@ import com.vrddhih.app.core.theme.VrddhihSpacing
 @Composable
 fun SystemPanel(
     modifier: Modifier = Modifier,
-    accent: Color = VrddhihColors.Electric,
+    accent: Color? = null,
     glow: Boolean = false,
     contentPadding: PaddingValues = PaddingValues(VrddhihSpacing.lg),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(VrddhihRadii.lg)
+    val borderModifier = Modifier.border(VrddhihDimens.BorderWidth, VrddhihColors.Outline, shape)
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
             .background(VrddhihBrushes.Panel)
-            .then(if (glow) Modifier.cornerGlow(accent) else Modifier)
-            .border(VrddhihDimens.BorderWidth, VrddhihBrushes.panelBorder(accent), shape)
+            .then(if (glow && accent != null) Modifier.cornerGlow(accent) else Modifier)
+            .then(borderModifier)
             .padding(contentPadding),
         content = content,
     )

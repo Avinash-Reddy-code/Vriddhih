@@ -120,25 +120,7 @@ fun GoalCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(VrddhihSpacing.sm),
             ) {
-                if (category != null) {
-                    CuteCategoryBadge(category = category, size = 32.dp, iconSize = 16.dp)
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(RoundedCornerShape(VrddhihRadii.xs))
-                            .background(VrddhihColors.PanelRaised)
-                            .border(1.dp, VrddhihColors.Outline, RoundedCornerShape(VrddhihRadii.xs)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Flag,
-                            contentDescription = null,
-                            tint = VrddhihColors.Ice,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
-                }
+                CuteCategoryBadge(category = category, size = 36.dp, iconSize = 18.dp)
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(

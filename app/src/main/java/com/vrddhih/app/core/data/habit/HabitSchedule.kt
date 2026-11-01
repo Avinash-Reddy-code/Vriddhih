@@ -23,6 +23,7 @@ object HabitScheduler {
             HabitScheduleType.EVERY_N_DAYS -> isEveryNDaysScheduled(habit, date)
             HabitScheduleType.WEEKLY_FREQUENCY -> isWeeklyFrequencyScheduled(habit, date)
             HabitScheduleType.SELECTED_WEEKDAYS -> isSelectedWeekdayScheduled(habit, date)
+            HabitScheduleType.MONTHLY_DAYS -> isMonthlyDayScheduled(habit, date)
         }
     }
 
@@ -34,6 +35,7 @@ object HabitScheduler {
             HabitScheduleType.EVERY_N_DAYS -> isEveryNDaysScheduled(habit, date)
             HabitScheduleType.WEEKLY_FREQUENCY -> isWeeklyFrequencyScheduled(habit, date)
             HabitScheduleType.SELECTED_WEEKDAYS -> isSelectedWeekdayScheduled(habit, date)
+            HabitScheduleType.MONTHLY_DAYS -> isMonthlyDayScheduled(habit, date)
         }
 
         val daysUntilNext = if (isScheduled || !isWithinPeriod) null else calculateDaysUntilNext(habit, date)
@@ -56,7 +58,7 @@ object HabitScheduler {
         val interval = habit.scheduleInterval
         if (interval <= 0) return false
 
-        val daysSinceStart = habit.startDate.until(date).days
+        val daysSinceStart = (date.toEpochDay() - habit.startDate.toEpochDay()).toInt()
         return daysSinceStart % interval == 0
     }
 
@@ -95,6 +97,12 @@ object HabitScheduler {
         return (habit.scheduleDaysMask and maskBit) != 0
     }
 
+    private fun isMonthlyDayScheduled(habit: HabitEntity, date: LocalDate): Boolean {
+        val dayOfMonth = date.dayOfMonth
+        val maskBit = 1 shl (dayOfMonth - 1)
+        return (habit.scheduleDaysMask and maskBit) != 0
+    }
+
     private fun calculateDaysUntilNext(habit: HabitEntity, date: LocalDate): Int? {
         if (!isWithinPeriod(habit, date)) return null
 
@@ -103,7 +111,7 @@ object HabitScheduler {
             HabitScheduleType.EVERY_N_DAYS -> {
                 val interval = habit.scheduleInterval
                 if (interval <= 0) return null
-                val daysSinceStart = habit.startDate.until(date).days
+                val daysSinceStart = (date.toEpochDay() - habit.startDate.toEpochDay()).toInt()
                 val remainder = daysSinceStart % interval
                 if (remainder == 0) interval else interval - remainder
             }
@@ -114,6 +122,12 @@ object HabitScheduler {
                     val maskBit = 1 shl (day.value - 1)
                     (habit.scheduleDaysMask and maskBit) != 0
                 }?.let { it.value - currentDay.value } ?: 7
+            }
+            HabitScheduleType.MONTHLY_DAYS -> {
+                (1..31).firstOrNull { offset ->
+                    val nextDate = date.plusDays(offset.toLong())
+                    isMonthlyDayScheduled(habit, nextDate)
+                } ?: 30
             }
             HabitScheduleType.WEEKLY_FREQUENCY -> {
                 1

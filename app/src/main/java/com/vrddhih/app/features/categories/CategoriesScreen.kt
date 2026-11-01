@@ -66,6 +66,7 @@ import com.vrddhih.app.core.theme.VrddhihTextStyles
 import com.vrddhih.app.core.ui.components.AnchoredPrimaryAction
 import com.vrddhih.app.core.ui.components.CategoryColors
 import com.vrddhih.app.core.ui.components.CategoryIcons
+import com.vrddhih.app.core.ui.components.CuteCategoryBadge
 import com.vrddhih.app.core.ui.components.SystemPanel
 import com.vrddhih.app.core.ui.components.VrddhihPrimaryButton
 import com.vrddhih.app.core.ui.components.neonAmbientGlow
@@ -251,7 +252,8 @@ fun CategoriesScreen(
         AnchoredPrimaryAction(
             text = stringResource(R.string.categories_new_action).uppercase(),
             onClick = onOpenCreate,
-            accent = VrddhihColors.NeonGreen,
+            icon = null,
+            accent = VrddhihColors.Electric,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
@@ -334,26 +336,11 @@ private fun CategoryItemCard(
             .padding(vertical = VrddhihSpacing.xs),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Large rounded-square colored icon container
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .neonAmbientGlow(
-                    color = accentColor,
-                    radius = 10.dp,
-                    alpha = 0.28f,
-                )
-                .clip(RoundedCornerShape(VrddhihRadii.lg))
-                .background(accentColor),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = iconVector,
-                contentDescription = category.name,
-                tint = VrddhihColors.Void,
-                modifier = Modifier.size(32.dp),
-            )
-        }
+        CuteCategoryBadge(
+            category = category,
+            size = 64.dp,
+            iconSize = 32.dp,
+        )
 
         Spacer(Modifier.height(VrddhihSpacing.xs))
 

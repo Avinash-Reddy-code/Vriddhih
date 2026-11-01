@@ -47,6 +47,15 @@ object HabitCompletionTracker {
                         if (value <= numericConfig.targetValue) HabitCompletionState.COMPLETED
                         else HabitCompletionState.MISSED
                     }
+                    NumericDirection.EXACTLY -> {
+                        if (value == numericConfig.targetValue) HabitCompletionState.COMPLETED
+                        else if (value > 0) HabitCompletionState.PARTIALLY_COMPLETED
+                        else HabitCompletionState.MISSED
+                    }
+                    NumericDirection.ANY_VALUE -> {
+                        if (value > 0) HabitCompletionState.COMPLETED
+                        else HabitCompletionState.MISSED
+                    }
                 }
             }
 
@@ -115,6 +124,13 @@ object HabitCompletionTracker {
                     }
                     NumericDirection.AT_MOST -> {
                         if (value <= numericConfig.targetValue) 1f else 0f
+                    }
+                    NumericDirection.EXACTLY -> {
+                        if (value == numericConfig.targetValue) 1f
+                        else (value.toFloat() / numericConfig.targetValue.toFloat()).coerceAtMost(1f)
+                    }
+                    NumericDirection.ANY_VALUE -> {
+                        if (value > 0) 1f else 0f
                     }
                 }
             }

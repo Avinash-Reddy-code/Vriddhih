@@ -125,6 +125,12 @@ fun VrddhihApp(
                                 navController.navigate("categories")
                             }
                         },
+                        onNavigateToThemes = {
+                            coroutineScope.launch {
+                                drawerState.close()
+                                navController.navigate("themes")
+                            }
+                        },
                     )
                 },
             ) {
@@ -207,6 +213,10 @@ fun VrddhihApp(
                             onNavigateToEditQuest = { questId, date ->
                                 navController.navigate("quest_editor?questId=$questId&occurrenceDate=$date")
                             },
+                            onNavigateToCreateHabit = { navController.navigate("habit_editor") },
+                            onNavigateToEditHabit = { habitId ->
+                                navController.navigate("habit_editor?habitId=$habitId")
+                            },
                             questsViewModel = questsViewModel,
                             dashboardViewModel = dashboardViewModel,
                             habitsViewModel = habitsViewModel,
@@ -238,7 +248,7 @@ fun VrddhihApp(
                                         TopLevelDestination.ACTIVITIES -> {
                                             when (activeActivityTab) {
                                                 ActivityTab.TASKS -> navController.navigate("quest_editor")
-                                                ActivityTab.HABITS -> habitsViewModel.openCreateHabit()
+                                                ActivityTab.HABITS -> navController.navigate("habit_editor")
                                             }
                                         }
                                         TopLevelDestination.GOALS -> {
@@ -265,14 +275,7 @@ fun VrddhihApp(
                     },
                     onCreateHabit = {
                         showDashboardCreateSheet = false
-                        activeActivityTab = ActivityTab.HABITS
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(
-                                page = TopLevelDestination.ACTIVITIES.ordinal,
-                                animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-                            )
-                            habitsViewModel.openCreateHabit()
-                        }
+                        navController.navigate("habit_editor")
                     },
                     onCreateGoal = {
                         showDashboardCreateSheet = false
@@ -354,6 +357,56 @@ fun VrddhihApp(
             )
         }
 
+        composable(
+            route = "habit_editor?habitId={habitId}",
+            arguments = listOf(
+                navArgument("habitId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+        ) { backStackEntry ->
+            val habitIdArg = backStackEntry.arguments?.getString("habitId")?.toLongOrNull()
+
+            LaunchedEffect(habitIdArg) {
+                habitsViewModel.prepareEditor(habitIdArg)
+            }
+
+            val habitsUiState by habitsViewModel.uiState.collectAsStateWithLifecycle()
+
+            com.vrddhih.app.features.habits.HabitEditorScreen(
+                draft = habitsUiState.editingDraft,
+                isLoading = habitsUiState.isEditorLoading,
+                isEdit = habitsUiState.editingDraft?.id != null,
+                errors = habitsUiState.editorErrors,
+                categories = habitsUiState.categories,
+                onDraftChange = habitsViewModel::updateEditorDraft,
+                onSave = {
+                    habitsViewModel.saveEditor(
+                        onSaved = {
+                            navController.popBackStack()
+                        }
+                    )
+                },
+                onSaveAndNew = {
+                    habitsViewModel.saveAndNewHabit()
+                },
+                onDelete = {
+                    habitsViewModel.deleteEditingHabit(
+                        onDeleted = {
+                            navController.popBackStack()
+                        }
+                    )
+                },
+                onCancel = {
+                    habitsViewModel.closeEditor()
+                    navController.popBackStack()
+                },
+                onCreateCustomCategory = habitsViewModel::createCustomCategory,
+            )
+        }
+
         composable("categories") {
             CategoriesRoute(
                 onBack = { navController.popBackStack() },
@@ -365,6 +418,12 @@ fun VrddhihApp(
                 modifier = Modifier
                     .statusBarsPadding()
                     .navigationBarsPadding(),
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable("themes") {
+            com.vrddhih.app.features.themes.ThemesScreen(
                 onBack = { navController.popBackStack() },
             )
         }

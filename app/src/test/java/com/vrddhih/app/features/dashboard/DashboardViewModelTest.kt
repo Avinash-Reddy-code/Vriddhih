@@ -226,6 +226,160 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun numericHabit_tracksProgressAndEvaluatesDoneOnDashboard() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, VrddhihDatabase::class.java)
+            .allowMainThreadQueries()
+            .addCallback(VrddhihDatabase.SEED_CALLBACK)
+            .build()
+        val habitRepo = HabitRepository(db, clock)
+
+        val viewModel = DashboardViewModel(
+            observeDayActivity = { flowOf(emptyDay) },
+            currentDate = { today },
+            habitRepository = habitRepo,
+        )
+        collectHabits(viewModel)
+
+        val habitId = habitRepo.createHabit(
+            name = "Reading",
+            type = HabitType.NUMERIC,
+            scheduleType = HabitScheduleType.DAILY,
+            startDate = today,
+        )
+        habitRepo.setNumericConfig(
+            habitId = habitId,
+            targetValue = 20,
+            unit = "pages",
+            direction = com.vrddhih.app.core.data.local.entity.NumericDirection.AT_LEAST,
+            incrementValue = 5,
+        )
+
+        val initial = viewModel.habits.first { it.firstOrNull()?.numericTarget == 20L }.first()
+        assertEquals("Reading", initial.name)
+        assertEquals(0L, initial.numericCurrent)
+        assertEquals(20L, initial.numericTarget)
+        assertFalse(initial.isDone)
+
+        // Increment by 10
+        viewModel.incrementHabitNumeric(habitId, 10)
+        val step1 = viewModel.habits.first { it.firstOrNull()?.numericCurrent == 10L }.first()
+        assertEquals(10L, step1.numericCurrent)
+        assertFalse(step1.isDone)
+
+        // Increment by 10 more (reaches 20 target)
+        viewModel.incrementHabitNumeric(habitId, 10)
+        val step2 = viewModel.habits.first { it.firstOrNull()?.numericCurrent == 20L }.first()
+        assertEquals(20L, step2.numericCurrent)
+        assertTrue(step2.isDone)
+
+        // Set directly to 5 (drops below target)
+        viewModel.setHabitNumeric(habitId, 5)
+        val step3 = viewModel.habits.first { it.firstOrNull()?.numericCurrent == 5L }.first()
+        assertEquals(5L, step3.numericCurrent)
+        assertFalse(step3.isDone)
+
+        db.close()
+    }
+
+    @Test
+    fun timerHabit_tracksSecondsAndEvaluatesDoneOnDashboard() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, VrddhihDatabase::class.java)
+            .allowMainThreadQueries()
+            .addCallback(VrddhihDatabase.SEED_CALLBACK)
+            .build()
+        val habitRepo = HabitRepository(db, clock)
+
+        val viewModel = DashboardViewModel(
+            observeDayActivity = { flowOf(emptyDay) },
+            currentDate = { today },
+            habitRepository = habitRepo,
+        )
+        collectHabits(viewModel)
+
+        val habitId = habitRepo.createHabit(
+            name = "Running",
+            type = HabitType.TIMER,
+            scheduleType = HabitScheduleType.DAILY,
+            startDate = today,
+        )
+        habitRepo.setTimerConfig(
+            habitId = habitId,
+            targetDurationSeconds = 1800, // 30 min
+            dailyTargetSeconds = 1800,
+        )
+
+        val initial = viewModel.habits.first { it.firstOrNull()?.timerTargetSeconds == 1800 }.first()
+        assertEquals("Running", initial.name)
+        assertEquals(0, initial.timerElapsedSeconds)
+        assertEquals(1800, initial.timerTargetSeconds)
+        assertFalse(initial.isDone)
+
+        // Log 15m (900 seconds)
+        viewModel.logHabitTimer(habitId, 900)
+        val step1 = viewModel.habits.first { it.firstOrNull()?.timerElapsedSeconds == 900 }.first()
+        assertEquals(900, step1.timerElapsedSeconds)
+        assertFalse(step1.isDone)
+
+        // Log another 15m (total 1800s -> completes)
+        viewModel.logHabitTimer(habitId, 900)
+        val step2 = viewModel.habits.first { it.firstOrNull()?.timerElapsedSeconds == 1800 }.first()
+        assertEquals(1800, step2.timerElapsedSeconds)
+        assertTrue(step2.isDone)
+
+        db.close()
+    }
+
+    @Test
+    fun checklistHabit_ticksIndividualItemsAndEvaluatesDoneOnDashboard() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, VrddhihDatabase::class.java)
+            .allowMainThreadQueries()
+            .addCallback(VrddhihDatabase.SEED_CALLBACK)
+            .build()
+        val habitRepo = HabitRepository(db, clock)
+
+        val viewModel = DashboardViewModel(
+            observeDayActivity = { flowOf(emptyDay) },
+            currentDate = { today },
+            habitRepository = habitRepo,
+        )
+        collectHabits(viewModel)
+
+        val habitId = habitRepo.createHabit(
+            name = "Morning Routine",
+            type = HabitType.CHECKLIST,
+            scheduleType = HabitScheduleType.DAILY,
+            startDate = today,
+        )
+        val item1Id = habitRepo.addChecklistItem(habitId, "Drink water", 0)
+        val item2Id = habitRepo.addChecklistItem(habitId, "Stretch", 1)
+
+        val initial = viewModel.habits.first { it.firstOrNull()?.checklistItems?.size == 2 }.first()
+        assertEquals(2, initial.checklistItems.size)
+        assertFalse(initial.checklistItems[0].isCompleted)
+        assertFalse(initial.checklistItems[1].isCompleted)
+        assertFalse(initial.isDone)
+
+        // Tick first item
+        viewModel.toggleChecklistItem(habitId, item1Id, true)
+        val step1 = viewModel.habits.first { it.firstOrNull()?.checklistItems?.get(0)?.isCompleted == true }.first()
+        assertTrue(step1.checklistItems[0].isCompleted)
+        assertFalse(step1.checklistItems[1].isCompleted)
+        assertFalse(step1.isDone)
+
+        // Tick second item (all completed)
+        viewModel.toggleChecklistItem(habitId, item2Id, true)
+        val step2 = viewModel.habits.first { it.firstOrNull()?.isDone == true }.first()
+        assertTrue(step2.checklistItems[0].isCompleted)
+        assertTrue(step2.checklistItems[1].isCompleted)
+        assertTrue(step2.isDone)
+
+        db.close()
+    }
+
+    @Test
     fun realGoals_observedWithProgressOnDashboard() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val db = Room.inMemoryDatabaseBuilder(context, VrddhihDatabase::class.java)

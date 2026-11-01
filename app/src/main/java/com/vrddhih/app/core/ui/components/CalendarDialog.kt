@@ -89,7 +89,7 @@ fun CalendarToggleButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             Icon(
                 imageVector = Icons.Outlined.CalendarMonth,
                 contentDescription = stringResource(R.string.calendar_open),
-                tint = VrddhihColors.Cyan,
+                tint = VrddhihColors.TextPrimary,
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -111,7 +111,7 @@ fun StatsToggleButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             Icon(
                 imageVector = Icons.Outlined.Insights,
                 contentDescription = stringResource(R.string.nav_stats),
-                tint = VrddhihColors.Cyan,
+                tint = VrddhihColors.TextPrimary,
                 modifier = Modifier.size(20.dp),
             )
         }

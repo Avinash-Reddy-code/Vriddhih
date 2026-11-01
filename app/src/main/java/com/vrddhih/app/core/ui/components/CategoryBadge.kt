@@ -51,8 +51,10 @@ import com.vrddhih.app.core.theme.VrddhihRadii
 import com.vrddhih.app.core.theme.VrddhihSpacing
 
 /**
- * A cute, royal category icon badge with subtle depth and jewel-tone accents.
- * Designed to look friendly and premium against the dark navy theme.
+ * Unified category icon badge matching the main category section design:
+ * - Rounded-square container with subtle neon ambient glow
+ * - Solid category color background
+ * - Near-black ([VrddhihColors.Void]) centered vector icon for high-contrast clarity
  */
 @Composable
 fun CuteCategoryBadge(
@@ -61,59 +63,59 @@ fun CuteCategoryBadge(
     size: Dp = 38.dp,
     iconSize: Dp = 20.dp,
     isSelected: Boolean = false,
+) = CuteCategoryBadge(
+    iconKey = category?.iconKey,
+    colorArgb = category?.colorArgb,
+    modifier = modifier,
+    size = size,
+    iconSize = iconSize,
+    isSelected = isSelected,
+    contentDescription = category?.name,
+)
+
+/**
+ * Overload for components that supply [iconKey] and [colorArgb] directly.
+ */
+@Composable
+fun CuteCategoryBadge(
+    iconKey: String?,
+    colorArgb: Int?,
+    modifier: Modifier = Modifier,
+    size: Dp = 38.dp,
+    iconSize: Dp = 20.dp,
+    isSelected: Boolean = false,
+    contentDescription: String? = null,
 ) {
-    val accentColor = category?.let { Color(it.colorArgb) } ?: VrddhihColors.Ice
-    val iconVector = CategoryIcons.byKey(category?.iconKey ?: "more_horiz")
-    val shape = RoundedCornerShape(12.dp)
-    val isGold = (category?.id == "builtin_money" || category?.colorArgb == 0xFFFFD700.toInt())
-
-    val backgroundBrush = if (isGold) {
-        Brush.linearGradient(
-            listOf(
-                VrddhihColors.Gold.copy(alpha = if (isSelected) 0.35f else 0.22f),
-                VrddhihColors.GoldDark.copy(alpha = if (isSelected) 0.25f else 0.12f),
-            )
-        )
-    } else {
-        Brush.linearGradient(
-            listOf(
-                accentColor.copy(alpha = if (isSelected) 0.30f else 0.18f),
-                VrddhihColors.PanelRaised,
-            )
-        )
-    }
-
-    val borderBrush = if (isSelected) {
-        Brush.linearGradient(listOf(VrddhihColors.Ice, VrddhihColors.Electric))
-    } else {
-        Brush.linearGradient(
-            listOf(
-                accentColor.copy(alpha = 0.50f),
-                accentColor.copy(alpha = 0.18f),
-            )
-        )
-    }
+    val hasColor = colorArgb != null
+    val accentColor = if (hasColor) Color(colorArgb!!) else VrddhihColors.Ice
+    val iconVector = CategoryIcons.byKey(iconKey ?: "more_horiz")
+    val shape = RoundedCornerShape((size * 0.26f).coerceIn(6.dp, 16.dp))
 
     Box(
         modifier = modifier
             .size(size)
-            .then(if (isSelected) Modifier.neonAmbientGlow(accentColor, radius = 8.dp, alpha = 0.35f) else Modifier)
+            .then(
+                if (hasColor) {
+                    Modifier.neonAmbientGlow(
+                        color = accentColor,
+                        radius = (size * 0.22f).coerceAtLeast(4.dp),
+                        alpha = 0.28f,
+                    )
+                } else Modifier
+            )
             .clip(shape)
-            .background(backgroundBrush)
-            .border(if (isSelected) 1.5.dp else 1.dp, borderBrush, shape),
+            .background(if (hasColor) accentColor else VrddhihColors.PanelRaised)
+            .then(
+                if (!hasColor) {
+                    Modifier.border(1.dp, VrddhihColors.Outline, shape)
+                } else Modifier
+            ),
         contentAlignment = Alignment.Center,
     ) {
-        // Subtle soft inner circular glow for cute depth
-        Box(
-            modifier = Modifier
-                .size(size * 0.65f)
-                .clip(CircleShape)
-                .background(accentColor.copy(alpha = 0.14f))
-        )
         Icon(
             imageVector = iconVector,
-            contentDescription = category?.name,
-            tint = accentColor,
+            contentDescription = contentDescription,
+            tint = if (hasColor) VrddhihColors.Void else VrddhihColors.Ice,
             modifier = Modifier.size(iconSize),
         )
     }
@@ -131,31 +133,13 @@ fun CategorySelectionTile(
     modifier: Modifier = Modifier,
 ) {
     val accentColor = Color(category.colorArgb)
-    val tileShape = RoundedCornerShape(VrddhihRadii.md)
-    val animatedBorderWidth by animateDpAsState(
-        targetValue = if (isSelected) 1.5.dp else 0.dp,
-        label = "tileBorderWidth",
-    )
-    val tileBgColor by animateColorAsState(
-        targetValue = if (isSelected) VrddhihColors.Electric.copy(alpha = 0.14f) else Color.Transparent,
-        label = "tileBgColor",
-    )
 
     Column(
         modifier = modifier
-            .widthIn(min = 68.dp, max = 80.dp)
-            .clip(tileShape)
-            .background(tileBgColor)
-            .then(
-                if (isSelected) Modifier.border(
-                    animatedBorderWidth,
-                    Brush.linearGradient(listOf(VrddhihColors.Ice, VrddhihColors.Electric)),
-                    tileShape,
-                ) else Modifier
-            )
+            .widthIn(min = 64.dp, max = 80.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(color = accentColor),
+                indication = ripple(color = accentColor, bounded = false, radius = 32.dp),
                 role = Role.RadioButton,
                 onClick = onClick,
             )
@@ -167,16 +151,16 @@ fun CategorySelectionTile(
         Box(contentAlignment = Alignment.TopEnd) {
             CuteCategoryBadge(
                 category = category,
-                size = 42.dp,
+                size = 44.dp,
                 iconSize = 22.dp,
                 isSelected = isSelected,
             )
             if (isSelected) {
                 Box(
                     modifier = Modifier
-                        .size(14.dp)
+                        .size(16.dp)
                         .clip(CircleShape)
-                        .background(VrddhihColors.Electric)
+                        .background(VrddhihColors.Ice)
                         .border(1.dp, VrddhihColors.Void, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -184,7 +168,7 @@ fun CategorySelectionTile(
                         imageVector = Icons.Outlined.Check,
                         contentDescription = null,
                         tint = VrddhihColors.Void,
-                        modifier = Modifier.size(9.dp),
+                        modifier = Modifier.size(10.dp),
                     )
                 }
             }
@@ -212,15 +196,12 @@ fun CreateCustomCategoryTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val tileShape = RoundedCornerShape(VrddhihRadii.md)
-
     Column(
         modifier = modifier
-            .widthIn(min = 68.dp, max = 80.dp)
-            .clip(tileShape)
+            .widthIn(min = 64.dp, max = 80.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(color = VrddhihColors.Ice),
+                indication = ripple(color = VrddhihColors.Ice, bounded = false, radius = 32.dp),
                 role = Role.Button,
                 onClick = onClick,
             )
@@ -230,7 +211,7 @@ fun CreateCustomCategoryTile(
     ) {
         Box(
             modifier = Modifier
-                .size(42.dp)
+                .size(44.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(VrddhihColors.Panel)
                 .border(1.dp, VrddhihColors.OutlineBright, RoundedCornerShape(12.dp)),

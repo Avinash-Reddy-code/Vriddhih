@@ -52,6 +52,8 @@ class HabitRepository(
 
     fun observeDailyProgressOn(date: LocalDate): Flow<List<HabitDailyProgress>> = dao.observeDailyProgressOn(date)
 
+    fun observeAllDailyProgressBetween(start: LocalDate, end: LocalDate): Flow<List<HabitDailyProgress>> = dao.observeAllDailyProgressBetween(start, end)
+
     fun observeChecklistProgressOn(date: LocalDate): Flow<List<HabitChecklistProgress>> = dao.observeChecklistProgressOn(date)
 
     fun observeHabitsScheduledOn(date: LocalDate): Flow<List<HabitEntity>> = combine(
@@ -117,6 +119,12 @@ class HabitRepository(
     }
 
     suspend fun deleteHabit(habit: HabitEntity) = dao.deleteHabit(habit)
+
+    suspend fun deleteHabit(id: Long): Boolean = db.withTransaction {
+        val habit = dao.getHabit(id) ?: return@withTransaction false
+        dao.deleteHabit(habit)
+        true
+    }
 
     suspend fun setNumericConfig(
         habitId: Long,
@@ -217,6 +225,7 @@ class HabitRepository(
 
     suspend fun setChecklistItemProgress(habitId: Long, date: LocalDate, itemId: Long, completed: Boolean) = db.withTransaction {
         val existing = dao.getChecklistProgress(habitId, date).find { it.itemId == itemId }
+        val now = now()
         if (completed) {
             if (existing == null) {
                 dao.insertChecklistProgress(
@@ -224,16 +233,54 @@ class HabitRepository(
                         habitId = habitId,
                         date = date,
                         itemId = itemId,
-                        completedAt = now(),
+                        completedAt = now,
                     ),
                 )
             } else {
-                dao.insertChecklistProgress(existing.copy(completedAt = now()))
+                dao.insertChecklistProgress(existing.copy(completedAt = now))
             }
         } else {
             if (existing != null) {
                 dao.insertChecklistProgress(existing.copy(completedAt = null))
             }
+        }
+
+        // Keep overall daily progress in sync with checklist state
+        val allItems = dao.getChecklistItems(habitId)
+        val allProgress = dao.getChecklistProgress(habitId, date)
+        val completedCount = allProgress.count { it.completedAt != null }
+        val isAllCompleted = allItems.isNotEmpty() && completedCount == allItems.size
+        val existingDaily = dao.getDailyProgress(habitId, date)
+
+        if (isAllCompleted) {
+            if (existingDaily == null) {
+                dao.insertDailyProgress(
+                    HabitDailyProgress(
+                        habitId = habitId,
+                        date = date,
+                        completionState = HabitCompletionState.COMPLETED,
+                        completedAt = now,
+                        updatedAt = now,
+                    ),
+                )
+            } else {
+                dao.updateDailyProgress(
+                    existingDaily.copy(
+                        completionState = HabitCompletionState.COMPLETED,
+                        completedAt = existingDaily.completedAt ?: now,
+                        updatedAt = now,
+                    ),
+                )
+            }
+        } else if (existingDaily != null) {
+            val newState = if (completedCount > 0) HabitCompletionState.PARTIALLY_COMPLETED else HabitCompletionState.MISSED
+            dao.updateDailyProgress(
+                existingDaily.copy(
+                    completionState = newState,
+                    completedAt = null,
+                    updatedAt = now,
+                ),
+            )
         }
     }
 
@@ -473,6 +520,8 @@ class HabitRepository(
         startDate: LocalDate,
         endDate: LocalDate? = null,
         categoryId: String? = null,
+        iconKey: String? = null,
+        colorArgb: Int? = null,
         xpPerCompletion: Int = 5,
         numericTargetValue: Long = 1,
         numericUnit: String = "",
@@ -497,6 +546,8 @@ class HabitRepository(
                     startDate = startDate,
                     endDate = endDate,
                     categoryId = categoryId,
+                    iconKey = iconKey,
+                    colorArgb = colorArgb,
                     xpPerCompletion = xpPerCompletion,
                     createdAt = now,
                     updatedAt = now,
@@ -515,6 +566,8 @@ class HabitRepository(
                     startDate = startDate,
                     endDate = endDate,
                     categoryId = categoryId,
+                    iconKey = iconKey ?: existing.iconKey,
+                    colorArgb = colorArgb ?: existing.colorArgb,
                     xpPerCompletion = xpPerCompletion,
                     updatedAt = now,
                 ),

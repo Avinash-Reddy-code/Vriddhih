@@ -87,6 +87,8 @@ fun ActivitiesRoute(
     onNavigateToCategories: () -> Unit = {},
     onNavigateToCreateQuest: () -> Unit = {},
     onNavigateToEditQuest: (Long, LocalDate) -> Unit = { _, _ -> },
+    onNavigateToCreateHabit: () -> Unit = {},
+    onNavigateToEditHabit: (Long) -> Unit = {},
     questsViewModel: QuestsViewModel = viewModel(factory = QuestsViewModel.Factory),
     habitsViewModel: HabitsViewModel = viewModel(factory = HabitsViewModel.Factory),
     selectedTab: ActivityTab = ActivityTab.TASKS,
@@ -99,6 +101,8 @@ fun ActivitiesRoute(
         onNavigateToCategories = onNavigateToCategories,
         onNavigateToCreateQuest = onNavigateToCreateQuest,
         onNavigateToEditQuest = onNavigateToEditQuest,
+        onNavigateToCreateHabit = onNavigateToCreateHabit,
+        onNavigateToEditHabit = onNavigateToEditHabit,
         questsViewModel = questsViewModel,
         habitsViewModel = habitsViewModel,
         modifier = modifier,
@@ -114,6 +118,8 @@ fun ActivitiesScreen(
     onNavigateToCategories: () -> Unit = {},
     onNavigateToCreateQuest: () -> Unit = {},
     onNavigateToEditQuest: (Long, LocalDate) -> Unit = { _, _ -> },
+    onNavigateToCreateHabit: () -> Unit = {},
+    onNavigateToEditHabit: (Long) -> Unit = {},
     questsViewModel: QuestsViewModel = viewModel(factory = QuestsViewModel.Factory),
     habitsViewModel: HabitsViewModel = viewModel(factory = HabitsViewModel.Factory),
 ) {
@@ -221,6 +227,8 @@ fun ActivitiesScreen(
                     ActivityTab.HABITS -> {
                         HabitsScreen(
                             showHeader = false,
+                            onNavigateToCreateHabit = onNavigateToCreateHabit,
+                            onNavigateToEditHabit = onNavigateToEditHabit,
                             viewModel = habitsViewModel,
                         )
                     }

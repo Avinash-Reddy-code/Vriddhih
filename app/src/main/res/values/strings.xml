@@ -9,6 +9,20 @@
     <string name="nav_goals">Goals</string>
     <string name="nav_finance">Finance</string>
     <string name="nav_stats">Stats</string>
+    <string name="nav_themes">Themes</string>
+
+    <!-- Themes -->
+    <string name="themes_title">Themes</string>
+    <string name="themes_eyebrow">System · Customization</string>
+    <string name="themes_subtitle">Personalize your hunter system accent and interface.</string>
+    <string name="themes_core_heading">Core colors</string>
+    <string name="themes_premium_heading">Premium accent colors</string>
+    <string name="themes_twotone_heading">Curated two-tone presets</string>
+    <string name="themes_preview_title">Theme preview</string>
+    <string name="themes_preview_directive">Primary Directive</string>
+    <string name="themes_preview_action">Execute Protocol</string>
+    <string name="themes_default_reset">Reset to Default</string>
+    <string name="themes_active_label">Active</string>
 
     <!-- Activities -->
     <string name="activities_title">Activities</string>
@@ -62,6 +76,32 @@
     <string name="dashboard_goals_title">Goals</string>
     <string name="dashboard_goals_empty">No active goals tracked yet.</string>
     <string name="dashboard_goal_percent">%1$d%%</string>
+    <string name="dashboard_activities_title">Daily Activities</string>
+    <string name="dashboard_activities_filter_all">All</string>
+    <string name="dashboard_activities_filter_habits">Habits</string>
+    <string name="dashboard_activities_filter_quests">Quests</string>
+    <string name="dashboard_activities_filter_goals">Goals</string>
+    <string name="dashboard_activities_empty">No activities scheduled for this day.</string>
+    <string name="dashboard_habit_log_value">Log Value</string>
+    <string name="dashboard_habit_log_time">Log Time</string>
+    <string name="dashboard_habit_enter_value">Enter amount</string>
+    <string name="dashboard_habit_enter_minutes">Enter minutes</string>
+    <string name="dashboard_habit_target_at_least">Target: %1$d %2$s</string>
+    <string name="dashboard_habit_target_at_most">Max limit: %1$d %2$s</string>
+    <string name="dashboard_habit_target_exactly">Target: exactly %1$d %2$s</string>
+    <string name="dashboard_habit_target_any">Target: any %1$s</string>
+    <string name="dashboard_habit_checklist_progress">%1$d/%2$d completed</string>
+    <string name="dashboard_habit_banner_eyebrow">UPDATE PROGRESS</string>
+    <string name="dashboard_habit_completed_status">COMPLETED</string>
+    <string name="dashboard_habit_in_progress_status">IN PROGRESS</string>
+    <string name="dashboard_habit_complete_target">Complete Target</string>
+    <string name="dashboard_habit_reset_progress">Reset Progress</string>
+    <string name="dashboard_habit_add_minutes">Add %1$d min</string>
+    <string name="dashboard_habit_checklist_all_done">All items completed</string>
+    <string name="dashboard_habit_checklist_check_all">Check All</string>
+    <string name="dashboard_habit_checklist_reset_all">Reset All</string>
+    <string name="dashboard_habit_done_action">Done</string>
+    <string name="dashboard_habit_set_action">Set</string>
     <string name="dashboard_deadlines_title">Upcoming deadlines</string>
     <string name="deadline_due_today">Due today</string>
     <string name="deadline_due_tomorrow">Due tomorrow</string>
@@ -71,6 +111,10 @@
     </plurals>
     <string name="deadline_countdown">D-%1$d</string>
     <string name="dashboard_footer">Vrddhih keeps your data on this device. No account, no cloud, no sync.</string>
+    <string name="dashboard_footer_offline">System Status: Nominal · 100% Offline · Local storage active</string>
+    <string name="dashboard_footer_private">Zero remote servers, zero tracking · All growth stays on this device</string>
+    <string name="dashboard_footer_sovereignty">Local Protocol · No login, no telemetry, no cloud dependencies</string>
+    <string name="dashboard_footer_progress">%1$d directives completed today · All records preserved locally</string>
 
     <!-- Date selection -->
     <string name="date_strip_previous_week">Previous week</string>

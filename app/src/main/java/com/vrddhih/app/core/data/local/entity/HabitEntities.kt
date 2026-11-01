@@ -16,9 +16,10 @@ enum class HabitScheduleType {
     EVERY_N_DAYS,
     WEEKLY_FREQUENCY,
     SELECTED_WEEKDAYS,
+    MONTHLY_DAYS,
 }
 
-enum class NumericDirection { AT_LEAST, AT_MOST }
+enum class NumericDirection { AT_LEAST, AT_MOST, EXACTLY, ANY_VALUE }
 
 enum class HabitCompletionState { COMPLETED, PARTIALLY_COMPLETED, MISSED, SKIPPED, NOT_SCHEDULED }
 
@@ -56,13 +57,28 @@ data class HabitEntity(
         if (date.isBefore(startDate)) return false
         if (endDate != null && date.isAfter(endDate)) return false
         
-        return (scheduleDaysMask and date.dayOfWeek.maskBit()) != 0
+        return when (scheduleType) {
+            HabitScheduleType.DAILY -> true
+            HabitScheduleType.EVERY_N_DAYS -> {
+                val interval = scheduleInterval
+                if (interval <= 0) false
+                else ((date.toEpochDay() - startDate.toEpochDay()) % interval) == 0L
+            }
+            HabitScheduleType.SELECTED_WEEKDAYS -> (scheduleDaysMask and date.dayOfWeek.maskBit()) != 0
+            HabitScheduleType.MONTHLY_DAYS -> {
+                val maskBit = 1 shl (date.dayOfMonth - 1)
+                (scheduleDaysMask and maskBit) != 0
+            }
+            HabitScheduleType.WEEKLY_FREQUENCY -> true
+        }
     }
 
     companion object {
         const val EVERY_DAY_MASK = 0b111_1111
 
         fun maskOf(vararg days: DayOfWeek): Int = days.fold(0) { mask, day -> mask or day.maskBit() }
+
+        fun monthMaskOf(vararg days: Int): Int = days.fold(0) { mask, day -> mask or (1 shl (day - 1)) }
 
         internal fun DayOfWeek.maskBit(): Int = 1 shl (value - 1)
     }

@@ -32,6 +32,8 @@ fun SystemTag(text: String, color: Color, modifier: Modifier = Modifier) {
         text = text.uppercase(),
         style = VrddhihTextStyles.TagLabel,
         color = color,
+        maxLines = 1,
+        softWrap = false,
         modifier = modifier
             .clip(shape)
             .background(color.copy(alpha = 0.12f))

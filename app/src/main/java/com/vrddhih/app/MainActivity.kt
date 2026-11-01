@@ -11,6 +11,7 @@ import com.vrddhih.app.core.theme.VrddhihTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.vrddhih.app.core.theme.VrddhihThemeManager.init(applicationContext)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),

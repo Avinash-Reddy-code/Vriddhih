@@ -50,10 +50,29 @@ data class HabitPreview(
     val isDoneToday: Boolean,
 )
 
+data class DashboardChecklistItem(
+    val id: Long,
+    val title: String,
+    val isCompleted: Boolean,
+)
+
 data class DashboardHabitItem(
     val id: Long,
     val name: String,
     val isDone: Boolean,
+    val type: com.vrddhih.app.core.data.local.entity.HabitType = com.vrddhih.app.core.data.local.entity.HabitType.YES_NO,
+    val categoryId: String? = null,
+    val colorArgb: Int? = null,
+    val iconKey: String? = null,
+    val xpReward: Int = 5,
+    val numericTarget: Long = 1L,
+    val numericCurrent: Long = 0L,
+    val numericUnit: String = "",
+    val numericDirection: com.vrddhih.app.core.data.local.entity.NumericDirection = com.vrddhih.app.core.data.local.entity.NumericDirection.AT_LEAST,
+    val numericIncrement: Long = 1L,
+    val timerTargetSeconds: Int = 0,
+    val timerElapsedSeconds: Int = 0,
+    val checklistItems: List<DashboardChecklistItem> = emptyList(),
 )
 
 data class GoalPreview(
@@ -70,6 +89,8 @@ data class DashboardGoalItem(
     val title: String,
     val category: String,
     val progress: Float,
+    val colorArgb: Int? = null,
+    val iconKey: String? = null,
 ) {
     val percent: Int get() = (progress.coerceIn(0f, 1f) * 100).roundToInt()
 }

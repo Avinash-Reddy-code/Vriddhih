@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.vrddhih.app.core.theme.VrddhihColors
+import com.vrddhih.app.core.theme.VrddhihThemeState
 
 /**
  * Common floating '+' action button.
@@ -50,8 +51,9 @@ fun VrddhihFloatingActionButton(
         animationSpec = spring(stiffness = 800f),
         label = "fab_press_scale",
     )
+    val currentTheme = VrddhihThemeState.currentTheme
     val containerColor by animateColorAsState(
-        targetValue = if (isPressed) VrddhihColors.OrangePressed else VrddhihColors.Orange,
+        targetValue = if (isPressed) currentTheme.fabPressedColor else currentTheme.fabColor,
         animationSpec = tween(durationMillis = 100),
         label = "fab_container_color",
     )
@@ -62,7 +64,7 @@ fun VrddhihFloatingActionButton(
             .scale(scale)
             .size(56.dp)
             .neonAmbientGlow(
-                color = VrddhihColors.Orange,
+                color = currentTheme.fabGlowColor,
                 radius = 10.dp,
                 alpha = 0.30f,
             )

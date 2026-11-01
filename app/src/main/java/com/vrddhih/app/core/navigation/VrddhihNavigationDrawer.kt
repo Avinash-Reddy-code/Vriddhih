@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +46,7 @@ import java.util.Locale
 fun VrddhihNavigationDrawerSheet(
     selectedDate: LocalDate,
     onNavigateToCategories: () -> Unit,
+    onNavigateToThemes: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val weekday = remember(selectedDate) {
@@ -137,6 +139,34 @@ fun VrddhihNavigationDrawerSheet(
             },
             selected = false,
             onClick = onNavigateToCategories,
+            colors = NavigationDrawerItemDefaults.colors(
+                unselectedContainerColor = Color.Transparent,
+                selectedContainerColor = VrddhihColors.Electric.copy(alpha = 0.15f),
+            ),
+            shape = RoundedCornerShape(VrddhihRadii.sm),
+            modifier = Modifier.padding(horizontal = VrddhihSpacing.md),
+        )
+
+        Spacer(Modifier.height(VrddhihSpacing.xs))
+
+        NavigationDrawerItem(
+            label = {
+                Text(
+                    text = stringResource(R.string.nav_themes),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = VrddhihColors.TextPrimary,
+                )
+            },
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.Palette,
+                    contentDescription = null,
+                    tint = VrddhihColors.Ice,
+                    modifier = Modifier.size(20.dp),
+                )
+            },
+            selected = false,
+            onClick = onNavigateToThemes,
             colors = NavigationDrawerItemDefaults.colors(
                 unselectedContainerColor = Color.Transparent,
                 selectedContainerColor = VrddhihColors.Electric.copy(alpha = 0.15f),

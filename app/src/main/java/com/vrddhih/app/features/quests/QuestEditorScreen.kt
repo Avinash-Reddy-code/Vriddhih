@@ -188,7 +188,7 @@ fun QuestEditorScreen(
         if (is24h) DateTimeFormatter.ofPattern("HH:mm") else DateTimeFormatter.ofPattern("h:mm a")
     }
 
-    val selectedCategoryId = draft?.categoryId ?: CATEGORY_OTHER_ID
+    val selectedCategoryId = draft?.categoryId
 
     Surface(
         modifier = modifier
@@ -385,7 +385,10 @@ fun QuestEditorScreen(
                                 CategorySelectionTile(
                                     category = category,
                                     isSelected = isSelected,
-                                    onClick = { onDraftChange(draft.copy(categoryId = category.id)) },
+                                    onClick = {
+                                        val next = if (category.id == selectedCategoryId) null else category.id
+                                        onDraftChange(draft.copy(categoryId = next))
+                                    },
                                 )
                             }
 

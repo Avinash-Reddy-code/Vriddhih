@@ -19,8 +19,13 @@ object VrddhihColors {
     // Ultra-dark Neon Accent Palette
     val NeonGreen = Color(0xFF59F581)     // Habit Tick vibrant neon green
     val NeonGreenBright = Color(0xFF7DFF9E) // Success gradient luminous highlight
-    val Electric = Color(0xFF5795FF)      // Electric blue
-    val Cyan = Color(0xFF38E5E5)          // Vivid cyan / ice energy
+    // Dynamic brand accents backed by active theme
+    val Electric: Color
+        get() = VrddhihThemeState.currentTheme.primaryAccent
+
+    val Cyan: Color
+        get() = VrddhihThemeState.currentTheme.secondaryAccent
+
     val Violet = Color(0xFFB388FF)        // Neon violet / royal
     val Pink = Color(0xFFFF72C6)          // Vibrant pink
     val Amber = Color(0xFFFFC45C)         // Warm neon amber
@@ -28,9 +33,13 @@ object VrddhihColors {
     val Gold = Color(0xFFFFD700)          // Category & reward gold accent
     val GoldDark = Color(0xFF8A6D05)      // Deeper gold for gradient shading
 
-    // Floating action button fiery orange accents
-    val Orange = Color(0xFFFF6A00)        // Intense vivid orange (#FF6A00)
-    val OrangePressed = Color(0xFFE85A00) // Pressed state orange (#E85A00)
+    // Floating action button accents backed by active theme's independent mapping
+    val Orange: Color
+        get() = VrddhihThemeState.currentTheme.fabColor
+
+    val OrangePressed: Color
+        get() = VrddhihThemeState.currentTheme.fabPressedColor
+
     val OrangeDarkIcon = Color(0xFF1A0A00)// Deep near-black icon (#1A0A00) for strong contrast
 
     // High-contrast typography tokens
@@ -39,7 +48,8 @@ object VrddhihColors {
     val TextMuted = Color(0xFF686875)     // De-emphasized metadata
 
     // Semantic roles mapped to neon tokens
-    val Ice = Cyan                        // System framing & info labels
+    val Ice: Color
+        get() = VrddhihThemeState.currentTheme.secondaryAccent
     val Frost = Color(0xFFE2F4FF)         // Crisp high-energy readouts
     val Success = NeonGreen               // Completed checkmarks, affirmative actions
     val Warning = Amber                   // Caution, threshold states
@@ -68,8 +78,10 @@ object VrddhihGlass {
 object VrddhihBrushes {
     val Backdrop = Brush.verticalGradient(listOf(VrddhihColors.Void, VrddhihColors.Void))
     val Panel = Brush.verticalGradient(listOf(VrddhihColors.PanelRaised, VrddhihColors.Panel))
-    val Energy = Brush.horizontalGradient(listOf(VrddhihColors.Electric, VrddhihColors.Cyan))
-    val EnergyVertical = Brush.verticalGradient(listOf(VrddhihColors.Cyan, VrddhihColors.Electric))
+    val Energy: Brush
+        get() = Brush.horizontalGradient(listOf(VrddhihColors.Electric, VrddhihColors.Cyan))
+    val EnergyVertical: Brush
+        get() = Brush.verticalGradient(listOf(VrddhihColors.Cyan, VrddhihColors.Electric))
     val NeonSuccess = Brush.horizontalGradient(listOf(VrddhihColors.NeonGreen, VrddhihColors.NeonGreenBright))
     val Emblem = Brush.linearGradient(listOf(VrddhihColors.PanelRaised, VrddhihColors.Panel))
     val Divider = Brush.horizontalGradient(

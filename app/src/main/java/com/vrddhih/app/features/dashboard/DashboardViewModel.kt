@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.vrddhih.app.VrddhihApplication
+import com.vrddhih.app.core.data.local.entity.CategoryEntity
 import com.vrddhih.app.core.data.local.entity.GoalType
 import com.vrddhih.app.core.data.quest.DayLog
 import com.vrddhih.app.core.data.quest.QuestOccurrence
@@ -67,6 +68,10 @@ class DashboardViewModel(
     private val _uiState = MutableStateFlow(DashboardMockData.initialState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
+    val categories: StateFlow<List<CategoryEntity>> = categoryRepository?.observeAll()
+        ?.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        ?: MutableStateFlow(emptyList())
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val occurrences: StateFlow<List<QuestOccurrence>> = dateState
         .map { it.selectedDate }
@@ -84,18 +89,71 @@ class DashboardViewModel(
             if (habitRepository == null) {
                 flowOf(emptyList())
             } else {
+                val categoriesFlow = categoryRepository?.observeAll() ?: flowOf(emptyList())
                 combine(
                     habitRepository.observeActiveHabitsWithConfigs(),
                     habitRepository.observeDailyProgressOn(date),
-                ) { habitsWithConfigs, progressList ->
+                    habitRepository.observeChecklistProgressOn(date),
+                    categoriesFlow,
+                ) { habitsWithConfigs, progressList, checklistProgressList, categories ->
                     val progressMap = progressList.associateBy { it.habitId }
+                    val checklistMap = checklistProgressList.filter { it.completedAt != null }.map { it.itemId }.toSet()
+                    val categoriesMap = categories.associateBy { it.id }
                     habitsWithConfigs
                         .filter { it.habit.isScheduledOn(date) || progressMap[it.habit.id]?.completedAt != null }
                         .map { habitWithConfigs ->
+                            val cat = habitWithConfigs.habit.categoryId?.let { categoriesMap[it] }
+                            val daily = progressMap[habitWithConfigs.habit.id]
+                            val items = habitWithConfigs.checklistItems.sortedBy { it.position }.map { item ->
+                                DashboardChecklistItem(
+                                    id = item.id,
+                                    title = item.title,
+                                    isCompleted = checklistMap.contains(item.id),
+                                )
+                            }
+                            val isDone = when (habitWithConfigs.habit.type) {
+                                com.vrddhih.app.core.data.local.entity.HabitType.YES_NO -> daily?.completedAt != null
+                                com.vrddhih.app.core.data.local.entity.HabitType.NUMERIC -> {
+                                    val target = habitWithConfigs.numericConfig?.targetValue ?: 1L
+                                    val current = daily?.numericValue ?: 0L
+                                    when (habitWithConfigs.numericConfig?.direction ?: com.vrddhih.app.core.data.local.entity.NumericDirection.AT_LEAST) {
+                                        com.vrddhih.app.core.data.local.entity.NumericDirection.AT_LEAST -> current >= target
+                                        com.vrddhih.app.core.data.local.entity.NumericDirection.AT_MOST -> current in 1..target
+                                        com.vrddhih.app.core.data.local.entity.NumericDirection.EXACTLY -> current == target
+                                        com.vrddhih.app.core.data.local.entity.NumericDirection.ANY_VALUE -> current > 0
+                                    }
+                                }
+                                com.vrddhih.app.core.data.local.entity.HabitType.TIMER -> {
+                                    val target = habitWithConfigs.timerConfig?.targetDurationSeconds ?: 0
+                                    val elapsed = daily?.timerSeconds ?: 0
+                                    target > 0 && elapsed >= target
+                                }
+                                com.vrddhih.app.core.data.local.entity.HabitType.CHECKLIST -> {
+                                    items.isNotEmpty() && items.all { it.isCompleted }
+                                }
+                                com.vrddhih.app.core.data.local.entity.HabitType.LIMIT -> {
+                                    val limit = habitWithConfigs.limitConfig?.dailyLimit ?: 0L
+                                    val current = daily?.numericValue ?: 0L
+                                    daily?.completedAt != null || (limit > 0 && current <= limit)
+                                }
+                            }
                             DashboardHabitItem(
                                 id = habitWithConfigs.habit.id,
                                 name = habitWithConfigs.habit.name,
-                                isDone = progressMap[habitWithConfigs.habit.id]?.completedAt != null,
+                                isDone = isDone,
+                                type = habitWithConfigs.habit.type,
+                                categoryId = habitWithConfigs.habit.categoryId,
+                                colorArgb = cat?.colorArgb ?: habitWithConfigs.habit.colorArgb,
+                                iconKey = cat?.iconKey ?: habitWithConfigs.habit.iconKey ?: "star",
+                                xpReward = habitWithConfigs.habit.xpPerCompletion,
+                                numericTarget = habitWithConfigs.numericConfig?.targetValue ?: 1L,
+                                numericCurrent = daily?.numericValue ?: 0L,
+                                numericUnit = habitWithConfigs.numericConfig?.unit ?: "",
+                                numericDirection = habitWithConfigs.numericConfig?.direction ?: com.vrddhih.app.core.data.local.entity.NumericDirection.AT_LEAST,
+                                numericIncrement = habitWithConfigs.numericConfig?.incrementValue ?: 1L,
+                                timerTargetSeconds = habitWithConfigs.timerConfig?.targetDurationSeconds ?: 0,
+                                timerElapsedSeconds = daily?.timerSeconds ?: 0,
+                                checklistItems = items,
                             )
                         }
                 }
@@ -113,9 +171,10 @@ class DashboardViewModel(
             categoriesFlow,
         ) { goalsWithConfigs, categories ->
             goalsWithConfigs.map { goalWithConfigs ->
-                val categoryName = goalWithConfigs.goal.categoryId?.let { catId ->
-                    categories.find { it.id == catId }?.name
-                } ?: "Objective"
+                val cat = goalWithConfigs.goal.categoryId?.let { catId ->
+                    categories.find { it.id == catId }
+                }
+                val categoryName = cat?.name ?: "Objective"
 
                 val progress = when (goalWithConfigs.goal.type) {
                     GoalType.MILESTONE_BASED -> {
@@ -142,6 +201,8 @@ class DashboardViewModel(
                     title = goalWithConfigs.goal.title,
                     category = categoryName,
                     progress = progress,
+                    colorArgb = cat?.colorArgb,
+                    iconKey = cat?.iconKey,
                 )
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -228,6 +289,45 @@ class DashboardViewModel(
             } else {
                 repo.completeHabit(habitId, date)
             }
+        }
+    }
+
+    /** Increments/decrements numeric habit value by delta for the selected date. */
+    fun incrementHabitNumeric(habitId: Long, delta: Long) {
+        val repo = habitRepository ?: return
+        viewModelScope.launch {
+            val date = dateState.value.selectedDate
+            val currentItem = habits.value.find { it.id == habitId }
+            val currentVal = currentItem?.numericCurrent ?: 0L
+            val newVal = (currentVal + delta).coerceAtLeast(0L)
+            repo.updateNumericProgress(habitId, date, newVal)
+        }
+    }
+
+    /** Sets the exact numeric habit value for the selected date. */
+    fun setHabitNumeric(habitId: Long, value: Long) {
+        val repo = habitRepository ?: return
+        viewModelScope.launch {
+            val date = dateState.value.selectedDate
+            repo.updateNumericProgress(habitId, date, value.coerceAtLeast(0L))
+        }
+    }
+
+    /** Logs additional timer seconds for a timer habit on the selected date. */
+    fun logHabitTimer(habitId: Long, additionalSeconds: Int) {
+        val repo = habitRepository ?: return
+        viewModelScope.launch {
+            val date = dateState.value.selectedDate
+            repo.logTimerSeconds(habitId, date, additionalSeconds)
+        }
+    }
+
+    /** Toggles completion state for an individual checklist item. */
+    fun toggleChecklistItem(habitId: Long, itemId: Long, completed: Boolean) {
+        val repo = habitRepository ?: return
+        viewModelScope.launch {
+            val date = dateState.value.selectedDate
+            repo.toggleChecklistItem(habitId, date, itemId, completed)
         }
     }
 

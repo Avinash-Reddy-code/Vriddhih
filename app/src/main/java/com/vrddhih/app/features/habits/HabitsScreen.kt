@@ -5,25 +5,33 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.TrackChanges
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,27 +43,27 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vrddhih.app.R
-import com.vrddhih.app.core.data.habit.HabitScheduler
+import com.vrddhih.app.core.data.local.dao.HabitWithConfigs
 import com.vrddhih.app.core.theme.VrddhihColors
 import com.vrddhih.app.core.theme.VrddhihDimens
+import com.vrddhih.app.core.theme.VrddhihRadii
 import com.vrddhih.app.core.theme.VrddhihSpacing
 import com.vrddhih.app.core.theme.VrddhihTextStyles
-import com.vrddhih.app.core.ui.components.CalendarToggleButton
 import com.vrddhih.app.core.ui.components.ScreenHeader
-import com.vrddhih.app.core.ui.components.VrddhihCalendarDialog
-import com.vrddhih.app.features.habits.components.HabitEditorDialog
 import com.vrddhih.app.features.habits.components.HabitItemCard
+import com.vrddhih.app.features.habits.components.HabitStatisticsDialog
 
 @Composable
 fun HabitsScreen(
     modifier: Modifier = Modifier,
     showHeader: Boolean = true,
+    onNavigateToCreateHabit: () -> Unit = {},
+    onNavigateToEditHabit: (Long) -> Unit = {},
     viewModel: HabitsViewModel = viewModel(factory = HabitsViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val dateState by viewModel.dateState.collectAsStateWithLifecycle()
-
-    var showCalendar by rememberSaveable { mutableStateOf(false) }
+    var habitToDelete by remember { mutableStateOf<HabitWithConfigs?>(null) }
+    var statisticsHabit by remember { mutableStateOf<HabitItemDisplay?>(null) }
 
     LifecycleResumeEffect(viewModel) {
         viewModel.refreshToday()
@@ -86,26 +94,21 @@ fun HabitsScreen(
                             eyebrow = stringResource(R.string.habits_eyebrow),
                             title = stringResource(R.string.habits_title),
                             subtitle = stringResource(R.string.habits_description),
-                            action = { CalendarToggleButton(onClick = { showCalendar = true }) },
                         )
                     }
                 }
 
                 // Habit Count Bar
                 item(key = "action-bar") {
-                    Row(
+                    Box(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                        contentAlignment = Alignment.CenterStart,
                     ) {
                         Text(
-                            text = "${uiState.habitItems.size} HABITS",
+                            text = "${uiState.habitDisplays.size} HABITS",
                             style = VrddhihTextStyles.SystemLabel,
                             color = VrddhihColors.TextMuted,
                         )
-                        if (!showHeader) {
-                            CalendarToggleButton(onClick = { showCalendar = true })
-                        }
                     }
                 }
 
@@ -121,34 +124,26 @@ fun HabitsScreen(
                             CircularProgressIndicator(color = VrddhihColors.Electric)
                         }
                     }
-                } else if (uiState.habitItems.isEmpty()) {
+                } else if (uiState.habitDisplays.isEmpty()) {
                     item(key = "empty") {
-                        EmptyHabitsState()
+                        EmptyHabitsState(onCreateHabit = onNavigateToCreateHabit)
                     }
                 } else {
                     items(
-                        items = uiState.habitItems,
-                        key = { it.habit.id },
-                    ) { habitWithConfigs ->
-                        val habit = habitWithConfigs.habit
-                        val category = uiState.categories.find { it.id == habit.categoryId }
-                        val progress = uiState.progressMap[habit.id]
-                        val checklistProgress = uiState.checklistProgressMap[habit.id] ?: emptyMap()
-                        val isScheduledToday = HabitScheduler.isScheduledOn(habit, dateState.selectedDate)
-
+                        items = uiState.habitDisplays,
+                        key = { it.habitWithConfigs.habit.id },
+                    ) { habitDisplay ->
                         HabitItemCard(
-                            habitWithConfigs = habitWithConfigs,
-                            progress = progress,
-                            category = category,
-                            checklistProgress = checklistProgress,
-                            isScheduledToday = isScheduledToday,
-                            onComplete = viewModel::completeHabit,
-                            onUndo = viewModel::undoCompletion,
-                            onUpdateNumeric = viewModel::updateNumericProgress,
-                            onLogTimerSeconds = viewModel::logTimerSeconds,
-                            onUpdateLimit = viewModel::updateLimitProgress,
-                            onToggleChecklistItem = viewModel::toggleChecklistItem,
-                            onEdit = viewModel::openEditHabit,
+                            display = habitDisplay,
+                            onEdit = { habitWithConfigs ->
+                                onNavigateToEditHabit(habitWithConfigs.habit.id)
+                            },
+                            onDelete = { habitWithConfigs ->
+                                habitToDelete = habitWithConfigs
+                            },
+                            onShowStatistics = { display ->
+                                statisticsHabit = display
+                            },
                         )
                     }
                 }
@@ -156,35 +151,61 @@ fun HabitsScreen(
         }
     }
 
-    if (showCalendar) {
-        VrddhihCalendarDialog(
-            selectedDate = dateState.selectedDate,
-            today = dateState.today,
-            onDateSelected = { date ->
-                viewModel.selectDate(date)
-                showCalendar = false
+    // Delete Confirmation Dialog
+    habitToDelete?.let { habitWithConfigs ->
+        AlertDialog(
+            onDismissRequest = { habitToDelete = null },
+            containerColor = VrddhihColors.Panel,
+            title = {
+                Text(
+                    text = "DELETE HABIT",
+                    style = VrddhihTextStyles.SystemLabel,
+                    color = VrddhihColors.Danger,
+                    fontWeight = FontWeight.Bold,
+                )
             },
-            onTodaySelected = {
-                viewModel.selectToday()
-                showCalendar = false
+            text = {
+                Text(
+                    text = "Are you sure you want to delete \"${habitWithConfigs.habit.name}\"? This will permanently delete this habit and its historical progress records. Unrelated quests and goals will not be affected.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = VrddhihColors.TextSecondary,
+                )
             },
-            onDismiss = { showCalendar = false },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteHabit(habitWithConfigs.habit.id)
+                        habitToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = VrddhihColors.Danger,
+                        contentColor = VrddhihColors.Void,
+                    ),
+                    shape = RoundedCornerShape(VrddhihRadii.xs),
+                ) {
+                    Text("DELETE", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { habitToDelete = null }) {
+                    Text("CANCEL", color = VrddhihColors.TextMuted)
+                }
+            },
         )
     }
 
-    if (uiState.isEditorOpen) {
-        HabitEditorDialog(
-            initialHabitWithConfigs = uiState.editingHabit,
-            categories = uiState.categories,
-            onDismiss = viewModel::closeEditor,
-            onSave = viewModel::saveHabit,
-            onDelete = viewModel::deleteHabit,
+    // Habit-Specific Statistics Dialog
+    statisticsHabit?.let { display ->
+        HabitStatisticsDialog(
+            display = display,
+            onDismiss = { statisticsHabit = null },
         )
     }
 }
 
 @Composable
 private fun EmptyHabitsState(
+    onCreateHabit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -214,6 +235,21 @@ private fun EmptyHabitsState(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = VrddhihSpacing.lg, vertical = VrddhihSpacing.xxs),
             )
+        }
+
+        Spacer(Modifier.height(VrddhihSpacing.xs))
+
+        Button(
+            onClick = onCreateHabit,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = VrddhihColors.Electric,
+                contentColor = VrddhihColors.Void,
+            ),
+            shape = RoundedCornerShape(VrddhihRadii.sm),
+        ) {
+            Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("CREATE HABIT", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
         }
     }
 }
